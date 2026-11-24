@@ -1,0 +1,326 @@
+{
+  "framework": "idea-to-production@2",
+  "generated_from": "dependency.md",
+  "capabilities": {
+    "UI guidance and review": [
+      "frontend-design",
+      "web-design-guidelines"
+    ],
+    "agent behavior evaluation": [
+      "agentic-eval"
+    ],
+    "agent trust-boundary review": [
+      "agent-owasp-compliance",
+      "agentic-actions-auditor"
+    ],
+    "agent-readable specs": [
+      "writing-for-agents"
+    ],
+    "ambiguity discovery": [
+      "grilling"
+    ],
+    "authorized PR-body close-out": [
+      "pr"
+    ],
+    "browser/end-to-end verification": [
+      "webapp-testing",
+      "playwright-generate-test"
+    ],
+    "completion evidence": [
+      "verification-before-completion"
+    ],
+    "consequence proofing": [
+      "poka-yoke"
+    ],
+    "database review": [
+      "postgresql-code-review"
+    ],
+    "domain modeling": [
+      "domain-modeling"
+    ],
+    "feasibility experiment": [
+      "prototype"
+    ],
+    "human-performed operations": [
+      "wizard"
+    ],
+    "module / interface design": [
+      "codebase-design"
+    ],
+    "provenance-backed research": [
+      "research"
+    ],
+    "security differential review": [
+      "differential-review"
+    ],
+    "session retrospective (user entry)": [
+      "retro"
+    ],
+    "standards + spec review": [
+      "code-review"
+    ],
+    "test-driven implementation": [
+      "tdd",
+      "diagnosing-bugs"
+    ],
+    "threat modeling": [
+      "security-threat-model"
+    ],
+    "whole-spec parallel implementation (user handoff)": [
+      "implement-spec"
+    ]
+  },
+  "skills": {
+    "agent-owasp-compliance": {
+      "source": "github/awesome-copilot",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-review"
+      ]
+    },
+    "agentic-actions-auditor": {
+      "source": "trailofbits/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-review",
+        "itp-incident"
+      ]
+    },
+    "agentic-eval": {
+      "source": "github/awesome-copilot",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-review"
+      ]
+    },
+    "code-review": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-review"
+      ]
+    },
+    "codebase-design": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-spec",
+        "itp-architecture",
+        "itp-slice",
+        "itp-implement"
+      ]
+    },
+    "diagnosing-bugs": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-implement",
+        "itp-incident"
+      ]
+    },
+    "differential-review": {
+      "source": "trailofbits/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-review",
+        "itp-incident"
+      ]
+    },
+    "domain-modeling": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-align",
+        "itp-spec",
+        "itp-architecture"
+      ]
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-implement"
+      ]
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-align",
+        "itp-architecture"
+      ]
+    },
+    "implement-spec": {
+      "source": "mattpocock/skills",
+      "invocation_class": "user",
+      "status": "installed-global",
+      "used_by": [
+        "user handoff only"
+      ]
+    },
+    "playwright-generate-test": {
+      "source": "github/awesome-copilot",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-implement"
+      ]
+    },
+    "poka-yoke": {
+      "source": "github/awesome-copilot",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-architecture",
+        "itp-slice"
+      ]
+    },
+    "postgresql-code-review": {
+      "source": "github/awesome-copilot",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-review"
+      ]
+    },
+    "pr": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-verify (authorized close-out only)"
+      ]
+    },
+    "prototype": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-spec"
+      ]
+    },
+    "research": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-research"
+      ]
+    },
+    "retro": {
+      "source": "mattpocock/skills",
+      "invocation_class": "user",
+      "status": "installed-global",
+      "used_by": [
+        "user entry only"
+      ]
+    },
+    "security-threat-model": {
+      "source": "openai/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-architecture"
+      ]
+    },
+    "tdd": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-implement"
+      ]
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-implement"
+      ]
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "invocation_class": "model",
+      "status": "vendored-pinned",
+      "used_by": [
+        "itp-verify"
+      ]
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/web-interface-guidelines (pinned local adapter)",
+      "invocation_class": "model",
+      "status": "vendored-pinned",
+      "used_by": [
+        "itp-review"
+      ]
+    },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-implement"
+      ]
+    },
+    "wizard": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-incident"
+      ]
+    },
+    "writing-for-agents": {
+      "source": "mattpocock/skills",
+      "invocation_class": "model",
+      "status": "installed-global",
+      "used_by": [
+        "itp-spec"
+      ]
+    }
+  },
+  "triggers": {
+    "agent-owasp-compliance": "agent/tool/prompt trust boundary changed",
+    "agentic-actions-auditor": "AI GitHub Actions workflow changed",
+    "agentic-eval": "agent/harness behavior changed; not for trust-boundary changes (that's agent-owasp-compliance)",
+    "differential-review": "medium/high-risk or security-sensitive diff; security regression; do not trigger for low-risk diffs (typos, formatting, message text) with no security surface",
+    "frontend-design": "new UI or visual redesign",
+    "playwright-generate-test": "a durable Playwright test is required",
+    "poka-yoke": "high-consequence design where a mistake is costly; do not trigger for reversible, low-stakes choices",
+    "postgresql-code-review": "PostgreSQL schema, query, or migration behavior changed",
+    "pr": "after verification passes, when a PR body is requested or an explicitly authorized delivery workflow requires one; never create or publish a PR without authorization",
+    "security-threat-model": "architecture touches auth, credentials, PII, trust boundaries, or external exposure; not for general summaries, code review, or non-security design",
+    "vercel-react-best-practices": "React/Next.js code is written or reviewed",
+    "web-design-guidelines": "UI review against the pinned Web Interface Guidelines",
+    "webapp-testing": "a browser-based flow must be exercised"
+  },
+  "user_entry": [
+    "grill-with-docs",
+    "grill-me",
+    "to-spec",
+    "to-tickets",
+    "implement",
+    "triage",
+    "improve-codebase-architecture",
+    "setup-matt-pocock-skills",
+    "ask-matt",
+    "wayfinder",
+    "handoff",
+    "teach",
+    "to-questionnaire",
+    "wait-what",
+    "implement-spec",
+    "retro"
+  ]
+}
