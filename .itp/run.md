@@ -3,8 +3,8 @@ run:
   goal: "Plan and build the Image Evidence Scanner from PRD.md and SPEC.md"
   scale: standard
   checkpoints: phase
-  next_phase: slice
-  completed: [research, align, spec, architecture]
+  next_phase: implement
+  completed: [research, align, spec, architecture, slice]
   artifacts:
     research: docs/product/research.md
     decisions: docs/product/decisions.md
@@ -16,7 +16,14 @@ run:
       - docs/architecture/ADR/0002-bounded-local-processing.md
       - docs/architecture/ADR/0003-task-profile-verdict-gates.md
     threat_model: docs/architecture/epics-threat-model.md
-  loaded_skills: [idea-to-production, itp-research, research, itp-align, grilling, itp-spec, writing-for-agents, itp-architecture, codebase-design, security-threat-model]
+    slices:
+      - docs/work/ISSUE-001.md
+      - docs/work/ISSUE-002.md
+      - docs/work/ISSUE-003.md
+      - docs/work/ISSUE-004.md
+      - docs/work/ISSUE-005.md
+      - docs/work/ISSUE-006.md
+  loaded_skills: [idea-to-production, itp-research, research, itp-align, grilling, itp-spec, writing-for-agents, itp-architecture, codebase-design, security-threat-model, itp-slice]
   open_questions:
     - "Select local generation/edit models, runtimes, versions, and licenses."
     - "Define evaluation dataset/profile and target population."
@@ -30,3 +37,4 @@ run:
     - "Alignment decisions recorded in docs/product/decisions.md; specific dataset, hardware budgets, models, and final parser/runtime choices remain for feasibility/architecture."
     - "Normative SPEC.md remains the single source of requirement text; docs/product/spec.md indexes it to avoid duplicating requirements."
     - "Initial architecture and threat model are design-only; no runtime code or security control is implemented. Local Markdown links resolve and git diff --check is clean."
+    - "Slices are ordered bootstrap -> bounded scan/report -> metadata/provenance -> forensic signals -> verdict contract -> evaluated model release. ISSUE-006 is gated on human-approved model/data/license/hardware choices."
