@@ -18,9 +18,9 @@ Report measured image/file signals with reproducible methods, prerequisites, and
 
 ## Relevant files/modules
 
-- `src/image_evidence_scanner/signals.py`
+- `src/image_evidence_scanner/image_input.py`
 - `src/image_evidence_scanner/report.py`
-- `tests/test_signals.py`
+- `tests/test_scan_cli.py`
 - `README.md`
 
 ## Dependencies
@@ -37,7 +37,7 @@ Report measured image/file signals with reproducible methods, prerequisites, and
 Run:
 
 ```sh
-python -m pytest -q tests/test_signals.py tests/test_report.py
+python -m pytest -q tests/test_scan_cli.py
 ruff check .
 ```
 

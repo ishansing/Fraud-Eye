@@ -5,6 +5,7 @@ run:
   checkpoints: phase
   next_phase: implement
   completed: [research, align, spec, architecture, slice]
+  active_phase: implement
   artifacts:
     research: docs/product/research.md
     decisions: docs/product/decisions.md
@@ -29,12 +30,11 @@ run:
     - "Define evaluation dataset/profile and target population."
     - "Confirm release gates after feasibility study."
     - "Set hardware and batch resource/time budget."
-    - "Select bounded metadata parser stack."
   notes:
-    - "Greenfield project; no application implementation is present."
+    - "Implementation has working scan, metadata/provenance, global-signal, and conservative unconfigured-assessment slices; ISSUE-006 remains gated on human model/profile/resource decisions."
     - "Scale is standard because initial architecture and implementation boundaries must be established."
     - "Research completed; stack options are evidence only, not decisions. See docs/product/research.md."
-    - "Alignment decisions recorded in docs/product/decisions.md; specific dataset, hardware budgets, models, and final parser/runtime choices remain for feasibility/architecture."
+    - "Alignment decisions recorded in docs/product/decisions.md; ExifTool and c2pa-python are selected runtime dependencies. Dataset, hardware budgets, models, and resource limits remain human decisions."
     - "Normative SPEC.md remains the single source of requirement text; docs/product/spec.md indexes it to avoid duplicating requirements."
     - "Initial architecture and threat model are design-only; no runtime code or security control is implemented. Local Markdown links resolve and git diff --check is clean."
     - "Slices are ordered bootstrap -> bounded scan/report -> metadata/provenance -> forensic signals -> verdict contract -> evaluated model release. ISSUE-006 is gated on human-approved model/data/license/hardware choices."

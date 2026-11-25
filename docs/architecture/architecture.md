@@ -10,10 +10,10 @@ An offline Python CLI accepts explicit paths, processes each image sequentially,
 src/image_evidence_scanner/
   cli.py                 argument parsing, exit status, top-level orchestration
   scan.py                per-file lifecycle and failure isolation
-  image_input.py         bounded read, digest, format/frame/dimension validation
-  metadata.py            parser coverage and normalized metadata records
-  provenance.py          C2PA and recognized-marking result
-  signals.py             reproducible file/pixel measurements
+  image_input.py         bounded read, digest, decode, image facts, global pixel signals
+  metadata.py            bounded ExifTool invocation and parser coverage
+  provenance.py          bounded C2PA worker orchestration
+  c2pa_worker.py         offline C2PA validation in a killable child process
   assessment.py          task result validation and verdict/advisory rules
   report.py              text and versioned JSON rendering
   output.py              safe atomic report writing
@@ -28,9 +28,8 @@ Keep modules private to the package until callers require otherwise. Avoid a gen
 | Module | Interface responsibility | Requirements |
 |---|---|---|
 | CLI / scan orchestration | Validate 1–5 explicit arguments, process each independently, preserve results, return specified exit status | REQ-1, REQ-2, REQ-18, REQ-19 |
-| Image input | Bounded bytes and original digest; facts from the same input bytes; explicit format/frame/error status | REQ-2–REQ-5, REQ-9 |
+| Image input | Bounded bytes and original digest; facts and global measurements from the same input bytes; explicit format/frame/error status | REQ-2–REQ-5, REQ-9–REQ-10 |
 | Metadata / provenance | Return values, parser/version coverage, errors, unverified labels, and distinct signature/trust/revocation states | REQ-6–REQ-8 |
-| Signals | Named reproducible measurements with prerequisites and limitations | REQ-9–REQ-10 |
 | Assessment | Independent generation/edit task records; apply profile gates and exact verdict/advisory rules | REQ-10–REQ-15 |
 | Report / output | Safe concise terminal text, complete versioned JSON, atomic protected destination | REQ-7, REQ-16–REQ-19 |
 
@@ -46,9 +45,9 @@ Keep modules private to the package until callers require otherwise. Avoid a gen
 ## Dependencies and controls
 
 - **Python / argparse / pytest:** selected runtime and minimal CLI/test tooling (ADR 0001).
-- **Pillow:** candidate decoder; adoption requires explicit JPEG/PNG/frame checks, dimension checks before loading, configured pixel limits, and decoder safeguards.
-- **ExifTool:** candidate metadata subprocess; adopt only after coverage, malformed-input, timeout/output-bound, packaging, and fixture tests. Invoke with fixed arguments and no shell.
-- **C2PA:** SDK and binding remain unselected until local-file behavior, trust configuration, and absence of network access are demonstrated.
+- **Pillow:** selected decoder for explicit JPEG/PNG/frame checks, dimension checks before loading, configured pixel limits, and retained decoder safeguards.
+- **ExifTool:** separately installed metadata subprocess; invoke with fixed arguments and no shell. Missing executable or parse errors are explicit; they must not silently become empty metadata.
+- **C2PA:** use the official `c2pa-python` binding for local byte streams. Set both remote-manifest and OCSP fetching false; run in a worker with a timeout. Preserve the unchecked-fresh-revocation limitation.
 - **Models:** no model/runtime is selected. Require explicit local artifacts/profile versions; no remote code or weight loading. Do not load arbitrary pickle artifacts.
 - **Reference data:** local, versioned profile only; dataset/license/provenance and held-out gates required before non-experimental verdicts.
 
@@ -66,7 +65,7 @@ All user inputs and embedded metadata are untrusted. Per-image processing remain
 ## Deferred decisions and risks
 
 - Exact Python packaging/install UX, supported Python version, and CI/linter choices.
-- Parser/decoder/C2PA versions, C2PA trust-list update process, and empirical network guarantees.
+- ExifTool version support, C2PA trust-list update process, and empirical network-denial evidence.
 - Generation/edit models, artifact formats, licenses, calibration/profile data, and threshold values.
 - Dataset population and splits, reference hardware, and numerical time/memory budgets.
 - Whether a sandbox or OS-level resource isolation is necessary after parser/runtime feasibility tests.

@@ -27,8 +27,8 @@ Extend the scan with versioned metadata coverage, explicit parser failures, sens
 ## Dependencies
 
 - `ISSUE-001`, `ISSUE-002`
-- ExifTool adoption requires representative and adversarial fixture results.
-- C2PA SDK/binding adoption requires proof of local-file support and no network activity; otherwise preserve explicit unsupported status and keep this slice blocked from claiming validation coverage.
+- ExifTool is a separately installed runtime dependency; local tests/CI must make it available, while missing-tool behavior remains explicit.
+- C2PA uses `c2pa-python` with remote-manifest fetching and OCSP fetching disabled. Network-denial verification is part of the CI merge gate.
 
 ## Out of scope
 
@@ -39,11 +39,11 @@ Extend the scan with versioned metadata coverage, explicit parser failures, sens
 Run:
 
 ```sh
-python -m pytest -q tests/test_metadata.py tests/test_provenance.py tests/test_offline_scan.py
+python -m pytest -q tests/test_metadata_cli.py
 ruff check .
 ```
 
-**Pass bar:** all tests pass; fixtures demonstrate each supported parser's coverage/errors; network-denied tests observe zero attempted connections; malformed and oversized blocks remain within configured limits and do not suppress sibling image results.
+**Pass bar:** all tests pass; fixtures demonstrate EXIF, XMP, IPTC, parser coverage/errors, missing-parser behavior, timeout, and output bounds; C2PA absence is neutral and the report names the offline policy; the network-denied CI test observes zero outbound packets; malformed and oversized blocks remain within configured limits and do not suppress sibling image results.
 
 ## Documentation impact
 

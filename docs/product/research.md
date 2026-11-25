@@ -23,13 +23,19 @@ Research for the open technical choices in `PRD.md` and `SPEC.md`; evidence is n
 ### Offline C2PA validation
 
 - **Evidence:** The official C2PA Rust SDK supports parsing and validating manifests, with configurable settings/context and trust anchors. C2PA guidance explains that signer trust depends on configured trust lists and revocation services/status. [c2pa-rs](https://github.com/contentauth/c2pa-rs), [SDK settings guide](https://opensource.contentauthenticity.org/docs/sdk-repos/c2pa-cpp/docs/context-settings), [C2PA guidance](https://spec.c2pa.org/specifications/specifications/2.4/guidance/Guidance.html)
-- **Recommendation:** Prototype the SDK’s local-file API with an explicit locally stored trust list and no network configuration. Report signature/manifest validity separately from trust and freshness of revocation status. The reviewed sources establish configurability and local trust-anchor input, but do **not** establish a universal “network disabled” switch or guarantee all validator code paths are network-free; prove this with network-denial tests or process-level isolation before claiming REQ-3/8.
+- **Evidence:** The official `c2pa-python` binding reads and validates media through `Reader`, accepts file or stream inputs, and supports per-instance `Context` settings. Its settings explicitly disable remote manifest retrieval and OCSP with `verify.remote_manifest_fetch: false` and `verify.ocsp_fetch: false`; the docs describe these as disabling network-dependent features for offline use. The binding requires Python 3.10+. [c2pa-python](https://github.com/contentauth/c2pa-python), [usage](https://github.com/contentauth/c2pa-python/blob/main/docs/usage.md), [context/settings and offline operation](https://github.com/contentauth/c2pa-python/blob/main/docs/context-settings.md)
+- **Recommendation:** Use the Python binding with both network-dependent verification settings explicitly false, a local input stream, and no remote trust-list configuration. Report manifest validity, signer trust, and revocation freshness separately. Keep process-level network-denial testing because configuration intent is not runtime observation.
 
 ### Local model runtime and weight safety
 
 - **Evidence:** ONNX Runtime is designed to load and run a local model path; it exposes `disable_telemetry_events()`, which only documents disabling telemetry—not all possible networking. [ONNX Runtime Python API](https://onnxruntime.ai/docs/api/python/api_summary.html), [ONNX Runtime privacy](https://github.com/microsoft/onnxruntime/blob/main/docs/Privacy.md)
 - **Evidence:** PyTorch’s serialization documentation describes `weights_only=True` loading to restrict unpickling behavior. That is a risk reduction, not proof that an arbitrary artifact is safe or that the model cannot consume excessive resources. [PyTorch serialization notes](https://docs.pytorch.org/docs/stable/notes/serialization.html)
 - **Recommendation:** Prefer a fixed, locally supplied ONNX artifact and ONNX Runtime for inference if selected candidate models export correctly; it separates inference from training dependencies. Do not download weights/code at scan time. Verify artifact hashes against a locally supplied manifest, pin model/runtime versions, and test with network denied. Avoid accepting arbitrary pickle/model code. Evaluate task accuracy, licenses, hardware support, and ONNX conversion on actual candidate detectors before selection.
+
+### Metadata parser deployment
+
+- **Evidence:** ExifTool's official installation guidance supports running its Perl distribution without a system-wide install and documents broad EXIF/GPS/IPTC/XMP/ICC support. Its command-line documentation provides unknown-tag options and JSON output. [ExifTool installation](https://exiftool.org/install.html), [supported formats](https://exiftool.org/#supported), [application documentation](https://exiftool.org/exiftool_pod.html)
+- **Decision context:** The project chose ExifTool as a separately installed runtime dependency, invoked with fixed arguments and bounded timeout/output; no scan-time download or bundled executable. If absent, the report exposes unavailable coverage rather than pretending extraction succeeded.
 
 ### Network-free execution
 
@@ -40,7 +46,7 @@ Research for the open technical choices in `PRD.md` and `SPEC.md`; evidence is n
 
 - No concrete generation/edit detector was selected or validated; neither model quality, licensing, hardware feasibility, nor release targets can be established from runtime documentation.
 - The exact parser behavior for malformed/oversized EXIF, XMP, IPTC, ICC, and nested container blocks needs adversarial fixture testing; documentation feature lists are not resource-bound guarantees.
-- Confirm the C2PA SDK version, supported JPEG/PNG bindings, trust-list provenance/update process, revocation behavior, and network attempts empirically.
+- Confirm the pinned C2PA Python binding version, trust-list provenance/update process, revocation behavior, and network behavior empirically on the supported runtime.
 - Define operational memory/time bounds and supported reference hardware; SPEC gives input-size/pixel ceilings but not a scan-time budget.
 
 ## Sources
