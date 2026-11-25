@@ -1,34 +1,32 @@
 # Project decisions
 
-Source: alignment of `PRD.md`, `SPEC.md`, and `docs/product/research.md` on 2026-11-24.
+Source: owner alignment on 2026-11-26, based on `SPECv2.md`.
 
 ## Facts
 
-- V1 is a local CLI for one to five explicit JPEG/PNG inputs; it must not make fraud, event-truth, legitimacy, or legal-authenticity judgments (`PRD.md` §§3, 5; `SPEC.md` §§2, 4).
-- Non-experimental `likely` outputs require the specified held-out performance gates; unsupported results must remain experimental or inconclusive (`SPEC.md` NFR-5).
-- Research identifies Python, Pillow, ExifTool, C2PA SDK, and ONNX Runtime as candidates only; none has been adopted (`docs/product/research.md`).
+- `SPECv2.md` proposes DocShield Forensics: document screening for Lending, Underwriting, and KYC operations via API, webhooks, and a review console.
+- The prior project was an offline image CLI. Its PRD, implementation, acceptance criteria, threat model, and architecture do not describe DocShield.
+- The provided specification includes support for PDF/JPEG/PNG/TIFF, multi-page processing, financial/identity signals, a numeric score, binary verdicts, and visual overlays.
 
 ## Decisions
 
-- **Runtime/deployment:** Use Python for a single-user local CLI. V1 has no daemon, network service, or authentication layer.
-- **Verdict gating:** Generation/edit verdicts are non-experimental only for task/domain profiles that pass the applicable documented release gates. Until then, report experimental or inconclusive outcomes; do not promise model-backed classifications without evidence.
-- **Evaluation scope:** Define a narrow, explicit target population and documented reference corpus for v1. Report cases outside the validated scope as experimental or inconclusive rather than implying broad generality.
-- **Initial target population:** Consumer images: smartphone camera captures, common fully synthetic images, and AI-edited images. Evaluate ordinary resizing and JPEG recompression; keep the precise corpus, labels, and split design open until feasibility research.
-- **Feasibility reference hardware:** Use the current development machine for measurements: AMD Ryzen 9 5900HS, 16 GB RAM, and NVIDIA RTX 3060 Laptop GPU with 6 GB VRAM. This is a feasibility baseline, not yet a minimum supported configuration or a model approval.
-- **Feasibility proposal:** Research candidate local models, datasets, runtimes, and licenses and return an evidence-backed proposal for owner approval. Do not implement a model-backed release profile before approval.
-- **Performance gates:** Retain the initial targets provisionally: at least 80% sensitivity at no more than 5% false-positive rate on the required held-out slices; require ECE ≤0.05 on an independent named population before using calibrated-likelihood language. Revisit only with feasibility evidence.
-- **Metadata parser:** Use ExifTool as a separately installed runtime dependency for broad extraction, invoked with fixed arguments and bounded time/output. Do not bundle it or download it during scans. If absent, preserve image facts and report parser coverage unavailable; do not imply metadata extraction succeeded.
-- **C2PA validator:** Use the official `c2pa-python` binding, passing image bytes as a stream and explicitly setting `verify.remote_manifest_fetch` and `verify.ocsp_fetch` to false. Report fresh revocation status as unchecked. Keep network-denial integration testing as a release requirement.
-- **Untrusted input processing:** Treat selected images and embedded metadata as hostile. Apply byte/pixel/time bounds, isolate per-image failures, and test execution with outbound networking denied. Use a bounded subprocess for ExifTool if it passes evaluation; subprocess separation is not itself a sandbox.
-- **Threat-model context:** V1 is manually operated by one local user; inputs may be hostile. No remote service, shared multi-user processing, or attacker control of installed software/model artifacts is in scope.
-- **Resource planning:** Specify a modest reference machine and measurable time/memory budgets for single-image and five-image scans before selecting detector models.
+- **Product direction:** Replace Image Evidence Scanner with DocShield Forensics. `SPECv2.md` is the new product input; update the canonical PRD and SPEC to match the owner-approved prototype scope.
+- **Prototype data:** Use synthetic documents only. Do not upload or process real identity, financial, or customer documents in this prototype.
+- **Prototype deployment:** Begin with a local-only REST API vertical slice and bounded in-memory processing. No public endpoint or production tenant.
+- **Retention:** Do not persist uploaded documents or generated artifacts in the prototype; process them in memory for the request lifetime.
+- **Screening boundary:** Results are screening signals only. Do not make or trigger credit, lending, onboarding, or KYC decisions.
+- **Verdict gate:** Until the applicable evaluation gates pass, return `INCONCLUSIVE`; enable `PASS`/`FLAGGED` only for an approved profile that meets the gates.
+- **Heatmaps:** Defer heatmap generation and URLs in the first prototype. Revisit access and lifetime when designing the review-console flow for memory-only processing.
+- **Phasing:** The first slice is a local API using synthetic fixtures. Defer webhook delivery, review console, Kubernetes/GPU deployment, and real-document handling until the core flow and privacy/security design are validated.
+- **Release evidence:** Treat the provided precision, recall, latency, and throughput numbers as release gates to measure, not established performance claims.
 
 ## Open questions
 
-- Which concrete population, corpus release, label provenance, and split design will define the v1 evaluation domain?
-- Which numerical per-image/batch time and memory limits are supportable on the feasibility reference hardware?
-- Which generation/edit models, runtimes, versions, and licenses pass feasibility and evaluation?
-- Does ExifTool meet parser coverage, safety, and packaging needs on representative/adversarial JPEG and PNG fixtures across supported platforms?
-- Do C2PA runtime tests confirm no network attempts with remote-manifest and OCSP fetching disabled?
+- Which local API framework and PDF/image parsing libraries fit the bounded prototype?
+- Which first document type and synthetic fixture format will provide the smallest useful end-to-end slice?
+- What byte, page, pixel, and timeout limits should the prototype enforce?
+- What scoring/evidence can be emitted without implying model validation, and how will the eventual profile be evaluated against the stated release gates?
+- What security, privacy, hosting, tenant, retention, and legal review is required before any real-document or externally reachable deployment?
+- How should later webhook and review-console access work without persistent document or heatmap storage?
 
-These open implementation choices are deferred to research/architecture and feasibility work; they do not authorize broad claims or bypass the release gates.
+These decisions authorize a synthetic-data prototype only. They do not authorize production hosting, real customer data, model claims, or consequential decisions.

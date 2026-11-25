@@ -1,5 +1,7 @@
 # Implementation review
 
+**Historical:** This review covers the superseded Image Evidence Scanner implementation only.
+
 **Range:** `a22a883...94f2a0f`
 **Verdict:** Approved for verification, with the resource limitation below recorded.
 **Scope:** ISSUE-001 through ISSUE-005. ISSUE-006 remains gated on model, dataset, licensing,

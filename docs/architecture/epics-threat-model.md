@@ -1,5 +1,9 @@
 # Epics threat model
 
+**Historical:** This threat model covers the superseded local image-scanner CLI. It does not
+cover DocShield's API, sensitive document data, or new trust boundaries; threat modeling must
+be revisited before DocShield implementation or any external exposure.
+
 ## Executive summary
 
 The current repository is a requirements-and-planning repository, not an implemented scanner. The top runtime risks are hostile image/metadata causing parser resource exhaustion or code execution, accidental exposure of sensitive metadata in JSON, and unsupported inference/provenance code making network requests or overstating results. The PRD/SPEC require controls for these risks, but none is yet demonstrated by application code.

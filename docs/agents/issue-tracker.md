@@ -8,6 +8,7 @@ source of truth for work status, ownership, and discussion.
   and its normative requirements in `SPEC.md`.
 - Use GitHub issue state for progress; do not create a parallel local status tracker.
 - Completed historical slices may remain in `docs/work/` without backfilling closed issues.
-- Active `ISSUE-006` is tracked at
-  [#1](https://github.com/ishansing/Fraud-Eye/issues/1); it remains blocked on owner approval
-  of the feasibility proposal and subsequent model/data/license/resource decisions.
+- The Image Evidence Scanner's former `ISSUE-006` is closed as superseded:
+  [#1](https://github.com/ishansing/Fraud-Eye/issues/1).
+- Active DocShield architecture work is `ISSUE-007`:
+  [#2](https://github.com/ishansing/Fraud-Eye/issues/2).

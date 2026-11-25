@@ -1,8 +1,10 @@
-# Implementation specification pointer
+# Normative specification pointer
 
-The normative v1 implementation specification is [`../../SPEC.md`](../../SPEC.md), kept at
-the repository root to preserve the project’s existing entry point. It defines stable `REQ-*`
-requirements, the JSON report contract, quality gates, and open implementation questions.
+The normative DocShield Forensics specification is [`../../SPEC.md`](../../SPEC.md), kept at
+the repository root as the project entry point. It is based on the submitted
+[`../../SPECv2.md`](../../SPECv2.md) and amended with the owner-approved local,
+synthetic-data, memory-only prototype scope. It defines stable `REQ-*` requirements, the API
+contract, staged quality gates, and open implementation questions.
 
 Use this file as the product-document index; do not copy the normative requirements here.
 Testable acceptance criteria are maintained separately in

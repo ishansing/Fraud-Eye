@@ -1,125 +1,215 @@
-# Image Evidence Scanner — Product Specification
+# DocShield Forensics — Product Specification
 
 | Field | Value |
 | --- | --- |
-| Status | Draft for architecture and implementation |
-| Version | 1.1 |
-| Updated | 2026-11-23 |
-| Product requirements | [PRD](PRD.md) |
+| Status | Approved for local synthetic-data prototype; production use is blocked |
+| Version | 1.0.0-MVP |
+| Updated | 2026-11-26 |
+| Product requirements | [PRD.md](PRD.md) |
 | Acceptance criteria | [Acceptance criteria](docs/product/acceptance-criteria.md) |
-| Research | [Research](docs/product/research.md) |
+| Target audience | Lending, Underwriting & KYC Risk Operations |
 
 ## 1. Purpose and authority
 
-This document defines the normative behavior of Image Evidence Scanner v1. The PRD defines user outcomes; this specification defines implementation requirements. Acceptance criteria provide the verification conditions for each requirement. Where model behavior is not validated for the selected evaluation domain, the system must report the result as experimental or inconclusive rather than imply certainty.
+This document defines the normative behavior of **DocShield Forensics v1.0.0-MVP**. The product direction is document screening for Lending, Underwriting, and KYC operations. This specification incorporates the owner-approved prototype limits recorded in `docs/product/decisions.md`; `SPECv2.md` is retained as the submitted source proposal. Acceptance criteria define the prototype implementation gate, while later-stage requirements remain explicit.
 
 ## 2. Product boundary
 
-The product is an offline-first local CLI. It accepts one to five explicitly selected image files per invocation, analyzes each supported image, and emits a plain-language result plus optional JSON. It assesses likely AI generation and AI-assisted editing. It does not decide fraud, legitimacy, event truth, or legal authenticity.
+The DocShield Forensics product target is an automated REST API, webhook notification service, and Human-in-the-Loop (HITL) review console. It is intended to ingest financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), execute a four-layer forensics pipeline, and present screening findings. Scores, binary screening signals, and localization are future profile-gated capabilities, not prototype output.
 
-Version one supports single-frame JPEG and PNG. Directory recursion, remote URLs, network services, and formats beyond JPEG/PNG are out of scope.
+### Current prototype boundary
+
+- The first build is a **local-only REST API vertical slice** intended only for project-generated synthetic fixtures. It MUST bind only to loopback. The prototype does not verify whether arbitrary uploaded content is synthetic; do not send real customer, identity, financial, or other sensitive documents.
+- Uploaded bytes and intermediate artifacts MUST remain in memory for the request lifetime; the prototype MUST NOT persist source documents, extracted document content, or generated artifacts to disk or external services.
+- Until an approved profile passes its applicable evaluation gates, every successful analysis MUST return `INCONCLUSIVE`. `PASS` and `FLAGGED` are reserved for a later approved screening profile; they are never lending, credit, onboarding, or KYC decisions.
+- Heatmap generation and `heatmap_overlay_url` are deferred from the first prototype. Webhooks, the review console, multi-tenant/public hosting, Kubernetes, and GPU deployment are later phases.
+- Completion of the prototype is not production readiness. Any later move to real documents, externally reachable service, persistence, or consequential workflow requires new owner approval and security/privacy review.
+
+### Target personas and workflows
+
+| Target Persona | Target Workflow (later phase) | Target Interface |
+| --- | --- | --- |
+| Lending Risk Analyst | Uploads loan document bundles; reviews tampering heatmaps, field breakdowns, and arithmetic checks | Human-in-the-Loop Review Console |
+| KYC / Compliance Officer | Reviews screening signals as one input to a human-controlled process | Automated Webhook Callbacks |
+| FinTech Platform Engineer | Submits documents programmatically and parses structured JSON verdicts within ≤ 2.0 s/page | REST API (`POST /v1/documents/analyze`) |
+
+### Out of scope for v1.0.0-MVP
+
+- Real-document processing and external production deployment in the current prototype.
+- Persistent storage of source documents, extracted content, or artifacts in the current prototype.
+- Automated credit underwriting, lending, identity, onboarding, or KYC decisions.
+- Non-document media formats (video, audio, or unsupported office containers beyond `PDF`, `JPEG`, `PNG`, `TIFF`).
 
 ## 3. Terms
 
-- **Camera-captured reference:** A dataset image with independently documented camera-origin ground truth. It can still be conventionally edited or depict a false event.
-- **AI-generated:** Most or all visible image content was synthesized by a generative system.
-- **AI-edited:** A source image contains one or more changes produced by a generative AI system. Traditional non-generative editing is not automatically AI editing.
-- **Detector score:** A versioned model's numeric output. It is a probability only when calibrated and validated for the stated population.
-- **Verdict:** The tool's evidence-based AI-origin category. It is not a fraud or truth judgment.
-- **Inconclusive:** Available or validated evidence is insufficient, conflicting, unsupported, or outside the detector's tested scope.
+- **Authenticity Score:** A profile-specific `0–100` estimate of document integrity; it is not proof of authenticity and remains `null` until a validated profile defines its meaning.
+- **Screening verdict:** A profile-bounded screening result. The prototype returns `INCONCLUSIVE`; a later approved profile may return `PASS` or `FLAGGED`.
+- **Tampered Document:** An authentic source document altered via image editing, PDF manipulation, text-splicing, or generative inpainting.
+- **Synthetic / AI Document:** A document largely or wholly generated by multimodal generative AI (Diffusion/GAN) models.
+- **Anomaly:** A discrete forensic finding emitted by Layers 1–4 with a typed classification, severity level, human-readable detail, and optional spatial bounding box.
+- **Heatmap Overlay:** A validated model's estimate of potentially manipulated pixels, intended for later review-console use.
 
 ## 4. Functional requirements
 
-“MUST” is a release requirement. IDs are stable and acceptance criteria reference them.
+"MUST" indicates a mandatory v1.0.0-MVP release requirement. Requirement IDs are stable and mapped to the PRD's functional layers (`FR-1` through `FR-4`).
 
-### Batch inputs and safe processing
+### Ingestion, formats, and safe processing
 
-- **REQ-1 — Batch size:** Each CLI invocation MUST accept between one and five explicit image file paths. An invocation with zero or more than five paths MUST fail before analysis and explain the accepted limit. Directory paths and URLs MUST be rejected in v1.
-- **REQ-2 — Supported formats:** The scanner MUST analyze single-frame JPEG and PNG. Unsupported, malformed, multi-frame, and unreadable files MUST receive an explicit per-image status and reason. A failure for one selected image MUST NOT suppress other image results.
-- **REQ-3 — Local and read-only:** All image analysis and model inference MUST run locally. A scan MUST make no network requests, modify no source bytes, and MUST NOT overwrite an input file with a report.
-- **REQ-4 — Bounded parsing:** The scanner MUST reject files larger than 100 MiB and images larger than 50,000,000 decoded pixels before unbounded image processing. It MUST retain decoder safeguards and enforce limits on metadata size, nested structures, and processing time. Limit failures MUST be isolated per file.
-- **REQ-5 — Image identity:** For each readable file, the report MUST contain SHA-256 of the original bytes. The digest MUST be computed before analysis. A failure to read or hash MUST be explicit.
+- **REQ-1 — Supported document formats:** The product target accepts `PDF`, `JPEG`, `PNG`, and `TIFF` via REST API; console upload is later-phase. Prototype format support may be staged, but every unsupported, corrupted, password-locked, or unreadable input MUST fail cleanly with a structured reason code.
+- **REQ-2 — Multi-page and bundle isolation:** The product target processes multi-page `PDF`/`TIFF` pages independently and isolates file failures in bundles. The local prototype may process one synthetic document per request; bundle handling is later-phase.
+- **REQ-3 — Bounded parsing and input safety:** Before expensive decoding or inference, the API MUST enforce explicit limits on file bytes, page count, decoded pixel dimensions, nested PDF object depth, and per-page processing time. Prototype defaults MUST be selected before implementation. Decoder safety limits MUST remain enabled to prevent decompression bombs and malformed-container exploits.
+- **REQ-4 — Document identity and integrity:** Upon ingestion, the system MUST assign a unique `document_id` (e.g., `doc_<hex>`) and compute a SHA-256 digest of the original input bytes prior to rasterization or transformation for audit traceability without modifying source bytes.
 
-### Metadata, provenance, and forensic evidence
+### Layer 1: File and Metadata Forensics (FR-1)
 
-- **REQ-6 — Metadata coverage:** The scanner MUST extract all values available from its documented, versioned local parsers for EXIF, XMP, IPTC, JPEG metadata segments, PNG ancillary metadata, ICC profiles, and embedded provenance. Reports MUST identify parser/version coverage and extraction errors. Unknown or unsupported blocks MUST be reported as such, not silently treated as empty metadata. Metadata values MUST be labeled unverified unless covered by validated signed provenance.
-- **REQ-7 — Sensitive metadata:** Local JSON MUST include all parseable metadata values by default, including GPS, device identifiers, timestamps, creator fields, and AI-system/prompt fields when present. Default terminal output MUST summarize findings without printing full sensitive values. Documentation MUST warn that reports may contain sensitive data.
-- **REQ-8 — Provenance and markings:** The scanner MUST inspect C2PA Content Credentials and any supported recognized AI-watermark/metadata markings. C2PA output MUST distinguish absent, present-but-invalid, valid-but-untrusted, trusted/valid, unsupported, and validator-error states as supported by the validator. Include signer, actions, binding, and validation details when available. With network disabled, report that fresh revocation status was not checked. A signed provenance claim can support attribution of a declared action; it MUST NOT be represented as proof of event truth. Absence of provenance or a watermark MUST NOT be evidence that an image is camera-captured.
-- **REQ-9 — Technical image signals:** For each supported image, the scanner MUST report format, byte size, dimensions, aspect ratio, mode/color space, bit depth when available, frame count, and relevant file structure. It MUST provide named reproducible pixel indicators, including per-channel distributions/statistics. JPEG-specific indicators such as quantization tables and chroma/subsampling information MUST be reported when available. Any noise, resampling, demosaicing/CFA, sensor-pattern, compression-history, or similar forensic result MUST identify its method, prerequisites/reference data, result, and limits. These indicators MUST NOT be treated as universal proof of camera origin or editing.
-- **REQ-10 — Image-level and local evidence:** The report MUST keep whole-image classification separate from localized editing analysis. If a configured edit model provides a region map or heatmap, the result MUST identify the model/version and be labeled an estimated localization. Global image statistics MUST NOT be presented as localized edit detection. Sensor/camera attribution MUST require an appropriate documented reference fingerprint; it MUST NOT infer a specific camera from generic population statistics alone.
+- **REQ-5 — Container and metadata extraction (FR-1.1):** The Metadata Engine MUST extract and validate raw container metadata, PDF trailer dictionaries, revision trees, and XMP/EXIF tags using versioned parsers (such as ExifTool and PDF stream parsers). Parse failures or malformed metadata blocks MUST be recorded as structured signals rather than silently ignored.
+- **REQ-6 — Producer and editor signature screening (FR-1.2):** The Metadata Engine MUST flag documents whose producer, creator, or editor signatures match a versioned, configurable blacklist. The default MVP blacklist MUST include `Canva`, `Photoshop`, `Skia/PDF`, `HeadlessChrome`, and `iLovePDF`.
+- **REQ-7 — Timestamp consistency checks (FR-1.3):** The Metadata Engine MUST cross-validate document modification timestamps against creation and internal stream timestamps and emit a `METADATA_DISCREPANCY` anomaly whenever `|ModDate − CreationDate| > Δthreshold`, where `Δthreshold` is a versioned policy parameter defined per document profile.
+- **REQ-8 — Vector-layer raster overlay inspection (FR-1.4):** For native PDFs, the Metadata Engine MUST inspect vector content streams and object layers to detect suspicious raster image patches overlaid directly on top of native PDF text blocks.
 
-### AI scores and verdict
+### Layer 2: Image and Frequency-Domain Forensics (FR-2)
 
-- **REQ-11 — Separate task outputs:** The scanner MUST produce separate AI-generation and AI-edit assessment records. Each record MUST include status, detector name/version, model artifact identifier, raw score and score semantics, threshold and threshold provenance, calibration profile, tested population, limitations, and reasons. A calibrated 0–100 likelihood MAY be reported only when calibration on independent data supports that interpretation. Otherwise show the model's raw score with units and label it uncalibrated. Scores MUST NOT be averaged across task types into one universal authenticity score.
-- **REQ-12 — Reference comparison:** The classification pipeline MUST compare evidence against a versioned reference/training profile whose documented labeled data includes camera-captured images, fully AI-generated images, and AI-edited images. Metadata and pixel indicators may contribute only when their use has been evaluated under missing, modified, and stripped-metadata conditions. Runtime inference MUST use the exact local profile/model versions named in the report; it MUST NOT download data, models, or code.
-- **REQ-13 — Per-task decision:** Each task MUST produce one of `likely`, `not_flagged`, or `inconclusive` using its validated, task-specific threshold. The report MUST state the threshold and validation domain. `not_flagged` MUST mean only that this detector did not cross its threshold.
-- **REQ-14 — Overall verdict:** Each image MUST receive exactly one overall verdict:
-  - `likely_ai_generated` when the validated generation task crosses its threshold and the result is not materially contradicted by other required evidence;
-  - `likely_ai_edited` when the validated edit task crosses its threshold and the generation task does not establish full-image synthesis;
-  - `likely_ai_generated_and_edited` when both validated tasks cross their thresholds;
-  - `no_configured_ai_signal_crossed_threshold` only when all tasks required by the active profile ran successfully below their thresholds;
-  - `inconclusive` when required task output is absent, invalid, out of scope, materially conflicting, or not supported by a validated profile.
-  The verdict MUST include a concise plain-language explanation and evidence references. It MUST NOT claim certainty, authenticity, fraud, or event truth.
-- **REQ-15 — Further-inspection advisory:** Each image MUST include `recommended`, `not_indicated_by_configured_models`, or `inconclusive`. A likely classification, conflicting indicators, provenance inconsistency, low evidence coverage, or out-of-domain status MUST recommend further inspection. The no-trigger advisory is permitted only when all active-profile tasks completed and the profile's validation gate passed. The report MUST describe the scope of any `not_indicated` result.
-- **REQ-16 — Clear user response:** Text output MUST present the verdict first, followed by generation/edit scores, the most relevant evidence, model/data profile, advisory, and a short limitation statement. Detailed metadata remains in JSON. Output MUST distinguish direct file observations, verified provenance, detector estimates, and final interpretation.
-- **REQ-17 — No fraud decision:** The scanner MUST NOT label an image or its associated claim fraudulent/legitimate, true/false, or authentic/inauthentic, and MUST NOT trigger any external or consequential action.
+- **REQ-9 — Frequency-domain spectral analysis (FR-2.1):** The Vision & ELA Engine MUST compute 2D Fast Fourier Transform (FFT) spectral maps on document page images to detect periodic checkerboard artifacts characteristic of generative Diffusion and GAN upsamplers.
+- **REQ-10 — Error Level Analysis (FR-2.2):** The Vision & ELA Engine MUST perform Error Level Analysis (ELA) to expose mismatched compression ratios between tampered regions (such as altered figures) and original document backgrounds.
+- **REQ-11 — Pixel-level tampering segmentation (FR-2.3):** The Vision & ELA Engine MUST run pre-trained forensic segmentation backbones (`TruFor` / `SegFormer` fine-tuned on `DocTamper`) to generate pixel-level tampering probability masks, localized `bounding_box` coordinates for `PIXEL_MANIPULATION` anomalies, and a renderable heatmap overlay image.
 
-### Reporting and operation
+### Layer 3: OCR, Font, and Geometry Consistency (FR-3)
 
-- **REQ-18 — Batch report:** The CLI MUST provide a concise human-readable summary for each selected image and a batch summary. When requested, it MUST write a valid versioned JSON report with one result per input and batch-level status. It MUST preserve all available metadata values and include evidence, parser coverage, model/data versions, scores, thresholds, verdict, advisory, limitations, and failures.
-- **REQ-19 — Output safety and exit status:** JSON writes MUST be atomic and MUST refuse symlink destinations or destinations that resolve to an input. The command MUST return nonzero for invalid batch size, unreadable/unsupported images, analysis failures, or report-write failures while preserving available per-image results when the report destination is writable.
-- **REQ-20 — Documentation:** User documentation MUST cover CLI usage, the one-to-five limit, supported formats, privacy and metadata sensitivity, parser coverage, verdict semantics, detector setup, reference/evaluation profile, limits, and the meaning of every score/advisory.
+- **REQ-12 — Spatial OCR extraction (FR-3.1):** The OCR & Layout Engine MUST extract spatial word and character bounding boxes and text content using `PaddleOCR` / `Donut` architectures, passing structured field extractions downstream to Layer 4.
+- **REQ-13 — Typography and geometry checks (FR-3.2):** The OCR & Layout Engine MUST detect baseline skew, irregular character spacing (kerning), and font-weight anomalies within numerical and financial fields, contributing to `font_anomaly_score`.
+- **REQ-14 — Hallucination and microprint degradation detection (FR-3.3):** The OCR & Layout Engine MUST flag potential AI-hallucinated characters or microprint degradation whenever character recognition confidence falls below `0.65` within high-DPI document sections (as defined by the active profile's DPI threshold).
 
-## 5. JSON report contract
+### Layer 4: Financial and Semantic Logic Verification (FR-4)
 
-The top-level report MUST include `schema_version`, scan timestamp, tool version, batch status, and per-image results. Each result MUST contain:
+- **REQ-15 — Financial ledger invariant validation (FR-4.1):** For bank statements and ledger documents, the Logic Engine MUST enforce the balance invariant equation `Closing Balance = Opening Balance + ∑ Credits − ∑ Debits`. Any discrepancy exceeding configured rounding precision MUST set `math_inconsistency: true` and emit an `ARITHMETIC_ERROR` anomaly citing expected versus claimed totals.
+- **REQ-16 — Identity document checksum and format validation (FR-4.2):** For identity and tax documents, the Logic Engine MUST execute deterministic validation routines including MRZ checksum validation, the Aadhaar Verhoeff algorithm, and PAN/GST format regular expressions, emitting structured anomalies on failure.
 
-| Group | Required content |
-| --- | --- |
-| Identity | Input path, processing status, SHA-256 when readable, detected format, file size. |
-| Image facts | Dimensions, aspect ratio, mode/color space, bit depth/frame count when available. |
-| Metadata | Parseable values, parser/version coverage, parse errors, explicit unverified label. |
-| Provenance | C2PA/recognized-marking status, validation details, signer/action/binding fields when available, revocation limitation. |
-| Forensics | Named measurements, results, prerequisites/reference data, limitations, optional edit localization. |
-| Model tasks | Separate generation and editing status, model/profile versions, score type/value, calibration, threshold, validation scope, limitations. |
-| Interpretation | Task decisions, one overall verdict, rationale, advisory, evidence coverage, and unresolved/contradicting signals. |
+### Ensemble scoring, verdict, and notifications
 
-JSON field names are draft until the first stable release. Any incompatible change after that release requires a schema-version increment.
+- **REQ-17 — Ensemble Risk Scorer (later phase):** After candidate evidence and evaluation exist, the system MUST aggregate Layer 1–4 outputs via a versioned Weighted Composite Rule into an `authenticity_score` (`0–100`) and `risk_breakdown`. The prototype MUST leave unvalidated score fields `null` rather than fabricate a numeric score.
+- **REQ-18 — Gated verdict assignment:** The prototype MUST return `INCONCLUSIVE` for every successful analysis and MUST NOT emit a pass/fail authenticity judgment. A later approved profile MAY return `PASS` or `FLAGGED` only after satisfying its evaluation gates; those values are screening signals, not consequential decisions.
+- **REQ-19 — Automated webhook callbacks (later phase):** Before production use, the platform MUST support authenticated webhook delivery of screening payloads with bounded retry handling. Webhooks are not part of the local prototype.
 
-## 6. Quality, validation, and robustness requirements
+### Human-in-the-Loop review console
 
-- **NFR-1 — Representative data:** Training/reference, calibration, and final test partitions MUST be separate by source image and disjoint by generator family/version, camera model where possible, editing tool, and acquisition pipeline. Dataset provenance, label method, licensing, class balance, and known gaps MUST be recorded.
-- **NFR-2 — Stress testing:** Evaluation MUST include common recompression qualities, resizing, cropping, screenshots/re-digitization, metadata removal and modification, and camera computational-photography pipelines. Evaluate model behavior for generation and editing separately.
-- **NFR-3 — Metrics:** Report per-class precision, recall/sensitivity, specificity, false-positive rate, false-negative rate, balanced accuracy, calibration (e.g. Brier score and expected calibration error), confidence intervals, coverage/inconclusive rate, and edit-localization metrics (e.g. F1/IoU) where applicable. Aggregate accuracy alone is insufficient.
-- **NFR-4 — Threshold governance:** Select task thresholds on calibration data against a documented false-positive constraint. Freeze thresholds before final held-out evaluation. Reports and release notes MUST identify threshold version and operating population. Scores outside the validated population MUST be downgraded to experimental or inconclusive.
-- **NFR-5 — Robustness release gate:** To issue non-experimental `likely` verdicts for a task/domain, the frozen threshold MUST achieve at least 80% sensitivity at no more than 5% false-positive rate on that task's held-out target population and each required core transformation slice. A score MUST NOT be called a calibrated likelihood unless the independent calibration profile has ECE ≤ 0.05 and its population is named. Publish confidence intervals and sample counts. Heatmaps MUST remain experimental until pixel-localization evaluation passes a documented mask-quality threshold. These are initial project release targets, not research findings or claims about any current model. If a target is missed, results for that domain MUST remain experimental or inconclusive.
-- **NFR-6 — Resource and parser safety:** Enforce the file, pixel, metadata, and time bounds before expensive analysis; retain library decoder limits; isolate malformed metadata and per-image failures.
-- **NFR-7 — Privacy and offline behavior:** No network requests during scan. Full local JSON may contain sensitive data. Default text output must not expose those values.
-- **NFR-8 — Reproducibility:** Record software, parser, model, calibration profile, reference dataset/profile, and threshold versions with each result. Preserve the original input digest.
-- **NFR-9 — Score semantics:** Detector scores from different tasks or models are not directly comparable. Use probability language only for independently calibrated scores and name the population to which that calibration applies.
+- **REQ-20 — Analyst review console (later phase):** A future console MAY allow analysts to review synthetic bundles, document pages, validated heatmaps, structured fields, and anomalies. The console and heatmap access are not part of the local prototype.
 
-## 7. Acceptance and release readiness
+## 5. System architecture and processing pipeline
 
-See [docs/product/acceptance-criteria.md](docs/product/acceptance-criteria.md). Functional completion does not satisfy the model release gate by itself. AI verdicts remain marked experimental until the NFR-1 through NFR-5 evidence is documented and the selected profile passes its approved gate.
+The production target is a stateless, horizontally scalable service behind an API Gateway. The prototype is a single local process bound to loopback:
 
-## 8. Decisions and open questions
+| Stage | Component | Responsibilities |
+| --- | --- | --- |
+| 1. Ingress | Local API | Validates synthetic fixture requests, enforces configured bounds, assigns `document_id`, and routes supported prototype formats. Production gateway, tenant authentication, and rate limits are later-phase requirements. |
+| 2. Parallel Forensics | Layer 1: Metadata Engine | Runs ExifTool / PDF Stream parser, Revision Tree Analyzer, blacklist checks, timestamp delta checks, and vector/raster overlay detection. |
+| 2. Parallel Forensics | Layer 2: Vision & ELA | Computes 2D-FFT spectral maps, Error Level Analysis, and `TruFor` / `SegFormer` tampering segmentation masks. |
+| 2. Parallel Forensics | Layer 3: OCR & Layout | Extracts `PaddleOCR` / `Donut` word/character bounding boxes, font baseline/kerning checks, and `< 0.65` confidence checks. |
+| 3. Aggregation & Logic | Anomaly Extraction & Layer 4: Logic Engine | Consolidates Layer 1 & 2 anomalies; runs Balance Sheet Validator and Checksum & ID Rules against Layer 3 extracted fields. |
+| 4. Scoring | Gated Screening Result | Returns `INCONCLUSIVE` until an approved profile passes its release gates; later profiles may emit `PASS` or `FLAGGED` screening signals. |
+| 5. Output | Local JSON API | Returns a synchronous screening response. Webhooks, heatmap access, and the review console are deferred. |
 
-### Confirmed
+## 6. API specification and output schema
 
-- One to five explicit local image files per scan; no folder or URL inputs in v1.
-- Extract all available supported metadata, keep it local, and include it in JSON by default.
-- Compare against documented, held-out camera-captured and synthetic/edit reference populations, not fixed universal EXIF rules.
-- Provide a clear AI-generation/AI-edit verdict with separate task scores and a further-inspection advisory.
-- Keep fraud, legitimacy, and event-truth decisions out of scope.
+### Analysis endpoint
+
+- **Endpoint:** `POST /v1/documents/analyze`
+- **Content-Type:** `multipart/form-data`
+- **Required fields:**
+  - `file`: Binary document payload (`PDF`, `JPEG`, `PNG`, or `TIFF`).
+  - `document_type`: Document classification identifier (e.g., `bank_statement`, `payslip`, `government_id`, `utility_bill`) used to select Layer 4 validation rules and profile thresholds.
+
+### JSON response contract
+
+Every successful analysis MUST return HTTP `200 OK` with the following top-level structure:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `document_id` | `string` | Unique identifier assigned to the analyzed document (e.g., `"doc_8fbc2390a12e"`). |
+| `authenticity_score` | `number \| null` | A `0–100` score only when a validated profile defines its semantics; otherwise `null`. |
+| `verdict` | `string` | Prototype enum: `"INCONCLUSIVE"`. An approved profile may later return `"PASS"` or `"FLAGGED"`. |
+| `processing_time_ms` | `integer` | End-to-end server-side processing duration in milliseconds. |
+| `risk_breakdown` | `object` | Layer-level signals. Unvalidated model scores are `null`; deterministic checks may report their typed results. |
+| `verdict_reason` | `string` | Explains that no validated profile is configured and the result is therefore `INCONCLUSIVE`. |
+| `detected_anomalies` | `array<object>` | List of triggered anomalies, each containing `type` (e.g., `METADATA_DISCREPANCY`, `PIXEL_MANIPULATION`, `ARITHMETIC_ERROR`), `severity` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `detail` (human-readable explanation), and optional `bounding_box` (`[x1, y1, x2, y2]`). |
+| `heatmap_overlay_url` | `string \| null` | `null` in the first prototype; heatmaps and retrieval URLs are deferred until the memory-only review flow is designed. |
+
+#### Example response payload
+
+```json
+{
+  "document_id": "doc_8fbc2390a12e",
+  "authenticity_score": null,
+  "verdict": "INCONCLUSIVE",
+  "processing_time_ms": 780,
+  "verdict_reason": "No validated screening profile is configured.",
+  "risk_breakdown": {
+    "synthetic_ai_likelihood": null,
+    "metadata_tampering": null,
+    "font_anomaly_score": null,
+    "math_inconsistency": null
+  },
+  "detected_anomalies": [
+    {
+      "type": "METADATA_DISCREPANCY",
+      "severity": "HIGH",
+      "detail": "PDF producer identified as 'Canva Canvas Engine'; ModDate differs from CreationDate by 120 days."
+    },
+    {
+      "type": "PIXEL_MANIPULATION",
+      "severity": "CRITICAL",
+      "detail": "Dense tampering heatmap detected around salary field.",
+      "bounding_box": [140, 520, 260, 560]
+    },
+    {
+      "type": "ARITHMETIC_ERROR",
+      "severity": "CRITICAL",
+      "detail": "Sum of transaction line items (₹2,45,000) does not match total credits claimed (₹3,85,000)."
+    }
+  ],
+  "heatmap_overlay_url": null
+}
+```
+
+## 7. Non-functional requirements and target KPIs
+
+| ID | Metric / Domain | Target KPI / Requirement | Implementation Standard |
+| --- | --- | --- | --- |
+| **NFR-1** | Precision | `≥ 96.0%` on Tampered Docs | Minimizes false rejection rate for genuine retail credit applicants across held-out validation datasets. |
+| **NFR-2** | Recall | `≥ 93.0%` on Synthetic / AI Docs | Catches subtle Diffusion/GAN-synthesized identity cards, bank statements, and payslips. |
+| **NFR-3** | Inference Latency | `≤ 2.0 Seconds / Page` | Production target to be measured on the chosen accelerator/runtime; not a prototype claim. |
+| **NFR-4** | Throughput | `50 RPS Base / 300 RPS Peak` | Production target to be load-tested after deployment architecture is approved; not a prototype claim. |
+| **NFR-5** | Data Privacy | Memory-only prototype | Prototype request bytes, extracted content, and artifacts remain in memory for the request lifetime and are not persisted. The prototype uses synthetic documents only. |
+
+### Engineering quality and governance requirements
+
+- **NFR-6 — Evaluation dataset discipline:** Before any non-inconclusive profile is enabled, training, threshold calibration, and final held-out partitions MUST be disjoint by source document and cover the named target population and stress transformations. The prototype uses synthetic fixtures only and makes no accuracy claim.
+- **NFR-7 — Threshold and model version governance:** Any later model/profile, blacklist, ensemble, and `PASS`/`FLAGGED` threshold MUST be versioned and frozen before release validation. The prototype MUST NOT treat example architectures in this document as approved dependencies.
+- **NFR-8 — Security and access control:** The prototype MUST bind only to loopback and MUST NOT expose a public service, webhook, or heatmap download. Any later externally reachable service MUST define TLS, authentication, authorization, and tenant isolation before deployment.
+
+## 8. Acceptance and release readiness
+
+The local prototype is not eligible for real-document or production traffic. Before any later production release, functional completion of Layers 1–4, the REST API, webhooks, and review console is necessary but not sufficient:
+
+- Held-out evaluation MUST verify `≥ 96.0%` precision on tampered documents (`NFR-1`) and `≥ 93.0%` recall on synthetic/AI documents (`NFR-2`).
+- Load testing on Kubernetes with TensorRT-optimized NVIDIA T4/A10G workers MUST confirm `≤ 2.0 s/page` p95 inference latency (`NFR-3`) and sustained `50 RPS` base / `300 RPS` peak throughput (`NFR-4`).
+- Security and privacy verification MUST demonstrate the owner-approved retention policy. The prototype's memory-only rule cannot be replaced by persisted 24-hour storage without a new owner decision.
+
+## 9. Decisions and open questions
+
+### Confirmed decisions
+
+- Product direction is **DocShield Forensics v1.0.0-MVP** targeting Lending, Underwriting, and KYC operations; the current deliverable is only a local synthetic-data prototype.
+- The product target supports `PDF`, `JPEG`, `PNG`, and `TIFF`; prototype format support may be delivered incrementally.
+- Prototype verdicts are `INCONCLUSIVE` until an approved profile passes its evaluation gates; later `PASS`/`FLAGGED` results are screening signals only.
+- Prototype input and artifacts are memory-only; heatmap URLs, webhooks, and review-console workflows are deferred.
 
 ### Open for architecture and implementation planning
 
-1. Which generation and edit models, versions, licenses, and local runtimes meet this project's deployment and evaluation constraints?
-2. Which dataset release/profile and target users define the evaluation population?
-3. Should the initial task gate of ≥80% sensitivity at ≤5% false-positive rate and ECE ≤0.05 be retained after a feasibility study?
-4. What resource/time budget and hardware define support for batches of five?
-5. Which metadata parser stack offers safe and sufficiently broad format coverage?
+1. **Ensemble weights and cutoff:** Final calibrated weights for Layers 1–4 and the exact `authenticity_score` threshold separating later `PASS` and `FLAGGED` outcomes to satisfy `≥ 96.0%` precision and `≥ 93.0%` recall.
+2. **Heuristic thresholds:** Exact default values for `Δthreshold` (`|ModDate − CreationDate|`, `REQ-7`) per document type and the minimum DPI definition for "high-DPI sections" (`REQ-14`).
+3. **API limits and enums:** Exact canonical list of `document_type` values, maximum file size (MiB), maximum page count for multi-page `PDF`/`TIFF`, and per-tenant rate-limit quotas at the API Gateway.
+4. **Webhook contract:** Exact webhook registration mechanism (tenant config vs. per-request callback URL), HMAC signature header format, and retry/dead-letter schedule.
 
-## 9. Change control
+## 10. Change control
 
-Product goals belong in the PRD. Normative behavior belongs here under stable `REQ-*` IDs. Verification conditions belong in acceptance criteria and reference those IDs. Changes to verdict categories, score semantics, limits, supported formats, metadata exposure, reference profile, or network behavior require updating this spec, acceptance criteria, decisions, architecture, and user documentation.
+Product goals and business KPIs belong in the PRD. Normative system behavior belongs in this specification under stable `REQ-*` and `NFR-*` IDs. Any change to the `POST /v1/documents/analyze` schema, `verdict` values, supported formats, ensemble scoring rules, retention window, or target KPIs MUST update this specification, corresponding acceptance tests, and API documentation together.

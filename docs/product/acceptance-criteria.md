@@ -1,38 +1,34 @@
 # Acceptance criteria
 
-These criteria verify the normative requirements in [`../../SPEC.md`](../../SPEC.md).
-Model verdicts remain experimental or inconclusive until the applicable release gates pass.
+These criteria verify [`SPEC.md`](../../SPEC.md). The current delivery is the local
+synthetic-data prototype. Later-phase criteria are release gates, not claims that the features
+exist today.
 
-## Batch input and safe processing
+## Prototype acceptance criteria
 
-- **REQ-1:** Zero and six input paths fail before analysis with the one-to-five limit; one and five explicit paths are accepted for processing. Directories and URLs are rejected.
-- **REQ-2:** JPEG and PNG single-frame inputs are analyzed. Unsupported, malformed, multi-frame, and unreadable inputs receive per-image status and reason; other batch results remain present.
-- **REQ-3:** A scan makes no network request, leaves input bytes unchanged, and never writes a report over an input.
-- **REQ-4:** Inputs over 100 MiB and decoded images over 50,000,000 pixels fail before expensive processing. Oversized/nested metadata and time-bound failures are bounded and isolated; decoder safeguards remain active.
-- **REQ-5:** Each readable input has the SHA-256 of its original bytes computed before analysis. Read/hash failures are explicit.
+- **Prototype boundary:** The service binds only to loopback. Tests and fixtures use synthetic documents; no real customer, financial, or identity records are accepted as project test data.
+- **REQ-1:** Each implemented format is documented. Supported synthetic fixtures are accepted; malformed, unsupported, password-locked, and unreadable files return structured error codes.
+- **REQ-2:** A request failure is isolated and does not corrupt another request. Multi-page and bundle behavior is deferred and not claimed.
+- **REQ-3:** Byte, page, pixel, parser-depth, and time limits are configured and checked before expensive work. Limit failures return bounded, structured errors.
+- **REQ-4:** Each accepted synthetic document gets a unique `document_id` and SHA-256 of the original bytes before rasterization or transformation. Source bytes remain unchanged.
+- **REQ-5:** Implemented metadata parsers identify their versions and coverage; malformed or unavailable parser results are explicit.
+- **REQ-6–8:** Blacklist/timestamp/vector-overlay checks are not claimed until implemented and covered with synthetic fixtures.
+- **REQ-9–11:** FFT, ELA, and pixel segmentation/heatmaps are deferred; the prototype does not claim those signals.
+- **REQ-12–16:** OCR/layout, font checks, ledger invariants, and identity checksum rules are added only with corresponding synthetic fixtures and explicit supported document types.
+- **REQ-17:** Unvalidated score fields are `null`; no numeric score is invented.
+- **REQ-18:** Every successful prototype analysis returns `INCONCLUSIVE`. It never returns `PASS` or `FLAGGED` before an approved profile passes its release gates.
+- **REQ-19–20:** Webhooks, review console, and heatmap retrieval are deferred from the prototype.
+- **API response:** Includes a unique ID, original-byte digest, processing duration, typed findings, `INCONCLUSIVE`, and null unvalidated scores/heatmap fields. Errors have a stable machine-readable reason.
+- **NFR-5:** Source bytes, extracted document content, and derived artifacts are not written to disk or external services; in-memory data is released at request completion.
+- **NFR-8:** The API binds to loopback only. No public listener, webhook, or heatmap download route exists.
 
-## Metadata, provenance, and evidence
+## Later-phase requirements
 
-- **REQ-6:** Report all values exposed by documented local parsers for EXIF, XMP, IPTC, JPEG/PNG metadata, ICC, and embedded provenance. Include parser/version coverage, errors, unknown/unsupported blocks, and unverified labeling.
-- **REQ-7:** JSON includes all parseable metadata, including sensitive fields. Default terminal output does not print full sensitive metadata.
-- **REQ-8:** Provenance output distinguishes absent, invalid, valid-but-untrusted, trusted/valid, unsupported, and validator-error states where supported. Include signer/action/binding/validation details when available; disclose that fresh revocation status was not checked offline. Absence of provenance is neutral.
-- **REQ-9:** Report format, byte size, dimensions, aspect ratio, mode/color space, available bit depth/frame count, relevant file structure, and named reproducible pixel indicators. JPEG quantization/subsampling are included when available. Forensic methods state prerequisites, references, results, and limits; none is presented as proof of origin/editing.
-- **REQ-10:** Whole-image and localized-edit assessments are separate. A localization map is estimated, model/version identified, and only present when supported. Global statistics are not localized detection; specific camera attribution requires a documented fingerprint.
-
-## Scores and verdicts
-
-- **REQ-11:** Generation and editing each have separate task records with status, detector/model/profile versions, raw score semantics, threshold/provenance, calibration, tested population, limits, and reasons. Probability language is used only for independently calibrated scores on a named population.
-- **REQ-12:** Every active classification profile identifies a versioned, documented reference population containing camera-captured, fully synthetic, and AI-edited examples. Evidence use is evaluated with metadata missing/modified/stripped. Inference uses exact local versions and performs no download.
-- **REQ-13:** Each task decision is `likely`, `not_flagged`, or `inconclusive`, using its validated task threshold and naming that threshold/domain. `not_flagged` is not an authenticity claim.
-- **REQ-14:** Each image has exactly one allowed overall verdict. The verdict follows the task/profile conditions in SPEC REQ-14; missing, invalid, conflicting, unsupported, or out-of-domain required evidence produces `inconclusive`. Explanation names evidence and avoids certainty, authenticity, fraud, and event-truth claims.
-- **REQ-15:** Each image has exactly one allowed advisory. Likely, conflicting, inconsistent, low-coverage, or out-of-domain evidence recommends inspection. A no-inspection advisory is emitted only when all active tasks complete and the profile passes its validation gate.
-- **REQ-16:** Text output presents verdict first, then separate scores, relevant evidence, model/data profile, advisory, and limitations. Detailed sensitive metadata stays in JSON; evidence categories remain distinguishable.
-- **REQ-17:** No output labels an image/claim fraudulent, legitimate, true, false, authentic, or inauthentic; no consequential or external action occurs.
-
-## Reporting, operation, and release
-
-- **REQ-18:** Requested JSON is valid and versioned, with timestamp, tool version, batch status, one result per input, identity/facts/metadata/provenance/forensics/model tasks/interpretation, and failures. Available metadata and evidence are preserved.
-- **REQ-19:** JSON writes are atomic and refuse symlink destinations and any destination resolving to an input. Invalid batch size, unreadable/unsupported input, analysis failure, or report-write failure returns nonzero while preserving available results whenever possible.
-- **REQ-20:** User documentation covers CLI usage and limits, supported formats, privacy/sensitive metadata, parser coverage, verdict/score/advisory meanings, detector setup, evaluation profile, and limitations.
-- **NFR-1–NFR-5:** Before non-experimental verdicts, document disjoint source/generator/camera/editing partitions, transformation stress tests, required task metrics, frozen thresholds, sample counts/confidence intervals, and held-out release-gate results. Localization remains experimental until its mask-quality gate passes.
-- **NFR-6–NFR-9:** Verification demonstrates bounded parsing/resources, offline behavior, reproducible version/digest reporting, and correct score semantics. Runtime tests deny outbound networking across decode, provenance, and inference paths.
+- **NFR-1–2:** Held-out evaluation measures precision and recall on the named target population; the proposed 96% precision and 93% recall targets pass before production claims.
+- **NFR-3–4:** Load tests on the approved deployment verify the proposed ≤2 seconds/page and 50/300 RPS targets.
+- **NFR-6:** Training, calibration, and held-out data are source-disjoint and cover the target documents and transformations.
+- **NFR-7:** Model, parser, policy, profile, and threshold versions are reproducible and recorded.
+- **NFR-8:** Before external access, TLS, authentication, authorization, tenant isolation, privacy review, and security review are verified.
+- **REQ-19–20:** Webhook signing/retry behavior and analyst review/heatmap behavior have their own integration and access-control tests.
+- `PASS`/`FLAGGED` remain screening signals only; they do not approve or reject credit, lending, onboarding, identity, or KYC applications.
+- Any transition to real-document handling or persistence requires owner approval and documented privacy/security/legal review.

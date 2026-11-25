@@ -1,5 +1,8 @@
 # Verification
 
+**Historical:** This verification covers the superseded Image Evidence Scanner implementation
+only; it is not evidence for DocShield.
+
 **Status:** Blocked for full product completion; the committed local-scanner checkpoint is
 verified.
 

@@ -1,5 +1,8 @@
 # Image Evidence Scanner architecture
 
+**Historical:** This architecture describes the superseded offline image CLI. It does not apply
+to DocShield; a new local API architecture is the next lifecycle phase.
+
 **Status:** The initial architecture has been implemented through ISSUE-005; model-backed
 classification remains gated on the decisions recorded in `.itp/run.md`.
 

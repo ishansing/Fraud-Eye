@@ -1,6 +1,8 @@
 # Implementation-planning research
 
-Research for the open technical choices in `PRD.md` and `SPEC.md`; evidence is not a product decision. Sources checked 2026-11-24. “Recommendation” denotes an implementation-planning option, not an adopted choice.
+**Historical:** This research concerns the superseded Image Evidence Scanner and does not support DocShield architecture or model decisions. DocShield-specific research has not yet been conducted. Sources below are retained for project history only.
+
+Research for the former image-scanner technical choices; evidence is not a product decision. Sources checked 2026-11-24 and 2026-11-25.
 
 ## Findings
 
