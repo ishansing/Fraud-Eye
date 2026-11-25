@@ -3,9 +3,9 @@ run:
   goal: "Plan and build the Image Evidence Scanner from PRD.md and SPEC.md"
   scale: standard
   checkpoints: phase
-  next_phase: implement
+  next_phase: review
   completed: [research, align, spec, architecture, slice]
-  active_phase: implement
+  active_phase: review
   artifacts:
     research: docs/product/research.md
     decisions: docs/product/decisions.md
@@ -31,7 +31,8 @@ run:
     - "Confirm release gates after feasibility study."
     - "Set hardware and batch resource/time budget."
   notes:
-    - "Implementation has working scan, metadata/provenance, global-signal, and conservative unconfigured-assessment slices; ISSUE-006 remains gated on human model/profile/resource decisions."
+    - "Implementation checkpoint committed as 0a0f8cb. Review is blocked because required docs/agents/issue-tracker.md is missing; resume review after tracker setup."
+    - "ISSUE-006 remains gated on human model/profile/resource decisions."
     - "Scale is standard because initial architecture and implementation boundaries must be established."
     - "Research completed; stack options are evidence only, not decisions. See docs/product/research.md."
     - "Alignment decisions recorded in docs/product/decisions.md; ExifTool and c2pa-python are selected runtime dependencies. Dataset, hardware budgets, models, and resource limits remain human decisions."
