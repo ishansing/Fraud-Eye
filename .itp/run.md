@@ -3,9 +3,9 @@ run:
   goal: "Plan and build the Image Evidence Scanner from PRD.md and SPEC.md"
   scale: standard
   checkpoints: phase
-  next_phase: align
+  next_phase: research
   completed: [research, align, spec, architecture, slice]
-  active_phase: align
+  active_phase: research
   artifacts:
     research: docs/product/research.md
     decisions: docs/product/decisions.md
@@ -27,25 +27,13 @@ run:
   loaded_skills: [idea-to-production, itp-research, research, itp-align, grilling, itp-spec, writing-for-agents, itp-architecture, codebase-design, security-threat-model, itp-slice]
   open_questions:
     - "Select local generation/edit models, runtimes, versions, and licenses."
-    - "Define evaluation dataset/profile and target population."
+    - "Select evaluation corpus/release, label provenance, and split design for the consumer-image population."
     - "Confirm release gates after feasibility study."
     - "Set hardware and batch resource/time budget."
-  handoff:
-    status: needs-human
-    reason: "The model-backed release slice requires approved models, evaluation population, licenses, hardware/resource budgets, and thresholds."
-    decision: "Approve the model and evaluation profile for ISSUE-006"
-    options:
-      - "Provide approved model/profile and hardware/resource choices"
-      - "Authorize feasibility research and a proposal for owner approval"
-    affected_artifacts:
-      - docs/product/decisions.md
-      - docs/product/research.md
-      - docs/work/ISSUE-006.md
-    resume_with: itp-align
   notes:
     - "Implementation checkpoints committed as 0a0f8cb, e14156b, and 94f2a0f. Review approved the implementation checkpoint for verification; see docs/work/review.md."
     - "Local issue tracker configuration recorded in docs/agents/issue-tracker.md; no remote was available, so no external tracker was inferred."
-    - "ISSUE-006 remains gated on human model/profile/resource decisions."
+    - "Owner selected the consumer-image target population, authorized feasibility research/proposal, and chose this Ryzen 9 5900HS / 16 GB / RTX 3060 6 GB machine as a measurement baseline; model/profile approval and numerical resource limits remain open."
     - "C2PA report-size limit is checked after the SDK materializes its manifest; no OS worker memory ceiling is set pending resource-budget decisions."
     - "Verification is blocked for full product completion; evidence is in docs/work/verification.md. The local scanner checkpoint passed its current checks."
     - "Scale is standard because initial architecture and implementation boundaries must be established."
