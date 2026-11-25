@@ -1,58 +1,47 @@
 # Implementation review
 
-**Range:** `a22a883...619b084`  
-**Verdict:** Changes requested  
-**Scope:** ISSUE-001 through ISSUE-005 implementation checkpoint. ISSUE-006 is outside this
-range and remains gated on model, dataset, licensing, and hardware decisions.
+**Range:** `a22a883...94f2a0f`
+**Verdict:** Approved for verification, with the resource limitation below recorded.
+**Scope:** ISSUE-001 through ISSUE-005. ISSUE-006 remains gated on model, dataset, licensing,
+and hardware decisions.
 
 ## Standards
 
-No findings. The changes follow documented project rules; Ruff-enforced issues are excluded.
+No documented-standard violations. The latest text report has three separate `Evidence:` lines
+(`src/image_evidence_scanner/report.py:20–25`); this is a small presentation-style smell, not a
+correctness issue, and preserves the distinction between observations, parser/provenance
+status, and global measurements.
 
 ## Spec and acceptance coverage
 
-### Findings
+The follow-up review found no remaining concrete requirement gap in its changed behavior.
+Previously reported gaps are addressed:
 
-1. **[Medium] Image structure and color-space signals are incomplete.** `SPEC.md` REQ-9 and
-   ISSUE-004 require mode/color space and relevant file structure. `image_input.py:79–87`
-   reports mode but no color space; `image_input.py:99–132` reports global statistics and
-   JPEG tables/subsampling, but no general file-structure indicators (including PNG chunk
-   structure).
+- REQ-9 / ISSUE-004: image facts include ICC profile description when available; reports now
+  include PNG chunk summaries and JPEG quantization/subsampling. Pixel signals name method,
+  prerequisites, reference-data status, results, and limitations.
+- REQ-4 / ISSUE-003: ExifTool JSON is capped at 16 MiB and nesting is explicitly limited to
+  64 levels, with a CLI regression test.
+- REQ-16: text output presents verdict and task results first, then evidence, profile, advisory,
+  limitations, and interpretation.
+- REQ-20 / ISSUE-003 / ISSUE-005: README explains parser coverage, C2PA states, versioned JSON,
+  verdicts, scores, and advisory scope.
+- ISSUE-003 offline check: CI now blocks and checks IPv4 and IPv6 OUTPUT traffic; an active
+  manifest-shaped test verifies the context disables remote manifest and OCSP fetching.
 
-2. **[Medium] Nested metadata bounds are not explicit.** `SPEC.md` REQ-4 and ISSUE-003 require
-   a stable bound on metadata nesting/structure. `metadata.py:45–52` passes parser output
-   directly to `json.loads`; the byte/time limits exist, but no configured depth limit or
-   nesting-bound test documents the effective limit. The caller isolates parse failures.
+## Security review and remaining limitation
 
-3. **[Medium] The C2PA output cap is applied after output materialization.** In
-   `c2pa_worker.py:18–30`, `Reader.json()` creates the complete manifest JSON string before
-   its 8 MiB check. A large embedded manifest can therefore consume memory beyond the stated
-   output cap before the worker returns an error. The 10-second parent timeout limits time,
-   not peak memory.
+No demonstrated compromise path or network bypass was found for hostile local image inputs.
+Input size, pixel count, parser time/output, JSON nesting, and PNG chunk scanning are bounded.
 
-4. **[Medium] Offline CI coverage does not cover all network paths.** `.github/workflows/ci.yml:24–27`
-   blocks and counts IPv4 `iptables` OUTPUT traffic only; there is no IPv6 rule. The current
-   C2PA integration fixture checks an image with no manifest, so it does not exercise an
-   active-manifest validation path under denied networking. This falls short of ISSUE-003’s
-   network-denial merge gate on environments where IPv6 egress is available.
+`c2pa_worker.py` checks the 8 MiB manifest report size after `Reader.json()` has materialized
+the full string. The 100 MiB input cap and timeout limit exposure, but there is no separate
+operating-system memory ceiling for the C2PA worker. README and `.itp/run.md` disclose this.
+The CI firewall was not executed locally, and no real signed C2PA asset was tested under
+denied networking.
 
-5. **[Low] User documentation omits general verdict/advisory meanings.** ISSUE-005’s documentation
-   impact calls for verdict categories, score semantics, and advisory meanings. `README.md:51–53`
-   explains the current unconfigured/inconclusive case but does not explain the meanings and
-   scope of the other contract values.
+## Verification handoff
 
-### Coverage notes
-
-- Generation and editing tasks are separate and explicitly unconfigured; no unsupported model
-  verdict is emitted.
-- Metadata sensitivity and offline revocation limitations are documented.
-- The offline adversarial review found no demonstrated compromise path for hostile local
-  images. Its coverage did not include native-library fuzzing or OS-level observation of
-  C2PA network behavior.
-- The CI workflow’s IPv4 packet counter is intended to catch denied IPv4 attempts; the
-  uncovered issue is IPv6 and the lack of an active-manifest fixture.
-
-## Recommended next
-
-Return to implementation for findings 1–4. Finding 5 can be addressed with concise README
-definitions. Then rerun affected tests and return for review.
+Fresh local evidence: `pytest -q` — 28 passed; Ruff check and format check passed; `git diff
+--check` passed. Proceed to `itp-verify` for this implementation checkpoint. Do not claim the
+full product goal complete while ISSUE-006 remains blocked on human decisions.

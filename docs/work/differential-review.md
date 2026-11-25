@@ -1,6 +1,6 @@
 # Differential security review
 
-**Range:** `a22a883...e14156b`  
+**Range:** `a22a883...94f2a0f`
 **Scope:** Local image input, ExifTool/C2PA process boundaries, report output, and scan egress.
 The runtime is greenfield in this range; there is no pre-existing application behavior to
 regress.
@@ -10,8 +10,11 @@ regress.
 - Attacker supplies a malformed or adversarial local JPEG/PNG that an operator chooses to scan.
 - Installed ExifTool and `c2pa-python` artifacts are operator-controlled.
 - Inputs are limited to 100 MiB and 50 million decoded pixels. ExifTool has fixed argv, a
-  5-second timeout, and a 16 MiB output cap. C2PA runs in a separate worker with a 10-second
-  timeout, explicit remote-manifest/OCSP disablement, and an 8 MiB report cap.
+  5-second timeout, a 16 MiB output cap, and a 64-level JSON nesting limit. C2PA runs in a
+  separate worker with a 10-second timeout, explicit remote-manifest/OCSP disablement, and an
+  8 MiB report cap.
+- PNG structure scanning stores only a fixed set of known chunk counts, aggregates other chunks,
+  and stops after 100,000 chunks.
 - The worker context is exercised with an active-manifest-shaped fixture and asserts both
   network settings are false. CI rejects and counts IPv4 and IPv6 OUTPUT traffic.
 - JSON output is written atomically and rejects symlink and input-file destinations.
@@ -36,7 +39,7 @@ memory ceiling is set; select a supported platform budget before claiming that p
   image; CLI accepts at most five images.
 - Tests cover image bounds, ExifTool timeout/output/nesting bounds, offline context settings,
   C2PA absence, report destination safety, and pixel/file-structure summaries.
-- Local test suite passed. The GitHub Actions firewall workflow was not executed locally, and
+- Local test suite passed (28 tests). The GitHub Actions firewall workflow was not executed locally, and
   no real signed C2PA asset was tested under denied networking.
 
 ## Recommendation
