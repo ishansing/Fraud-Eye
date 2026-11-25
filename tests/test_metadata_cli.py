@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import sys
 
-from PIL import Image
+from PIL import Image, ImageCms
 
 
 def run_cli(*args, env=None):
@@ -65,6 +65,24 @@ def test_exiftool_extracts_xmp_and_iptc_values(tmp_path):
     assert metadata["IPTC:Caption-Abstract"] == "private-iptc-value"
     assert result.stdout.find("private-xmp-value") == -1
     assert result.stdout.find("private-iptc-value") == -1
+
+
+def test_color_space_uses_embedded_icc_profile_description(tmp_path):
+    image = tmp_path / "profiled.png"
+    profile = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
+    Image.new("RGB", (2, 2), "red").save(image, icc_profile=profile)
+    report = tmp_path / "report.json"
+
+    result = run_cli("--json-output", report, image)
+    data = json.loads(report.read_text())
+    image_result = data["images"][0]
+
+    assert result.returncode == 0
+    assert image_result["image_facts"]["color_space"] == "sRGB built-in"
+    assert (
+        image_result["metadata"]["ICC_Profile:ProfileDescription"]
+        == image_result["image_facts"]["color_space"]
+    )
 
 
 def test_c2pa_absence_is_neutral_and_revocation_limitation_is_reported(tmp_path):

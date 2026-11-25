@@ -31,7 +31,7 @@ run:
     - "Confirm release gates after feasibility study."
     - "Set hardware and batch resource/time budget."
   notes:
-    - "Implementation checkpoint committed as 0a0f8cb. Review requested changes; depth bounds, PNG/JPEG structure reporting, dual-stack CI blocking, and verdict documentation were updated and need re-review."
+    - "Implementation checkpoints committed as 0a0f8cb and e14156b. Review findings for depth bounds, PNG/JPEG structure reporting, dual-stack CI blocking, verdict documentation, output profile/limitations, color-space metadata, and signal prerequisites were addressed; re-review the latest commit."
     - "Local issue tracker configuration recorded in docs/agents/issue-tracker.md; no remote was available, so no external tracker was inferred."
     - "ISSUE-006 remains gated on human model/profile/resource decisions."
     - "C2PA report-size limit is checked after the SDK materializes its manifest; no OS worker memory ceiling is set pending resource-budget decisions."
@@ -39,5 +39,5 @@ run:
     - "Research completed; stack options are evidence only, not decisions. See docs/product/research.md."
     - "Alignment decisions recorded in docs/product/decisions.md; ExifTool and c2pa-python are selected runtime dependencies. Dataset, hardware budgets, models, and resource limits remain human decisions."
     - "Normative SPEC.md remains the single source of requirement text; docs/product/spec.md indexes it to avoid duplicating requirements."
-    - "Initial architecture and threat model are design-only; no runtime code or security control is implemented. Local Markdown links resolve and git diff --check is clean."
+    - "The initial architecture and threat model informed implemented local input, parser, output, and offline controls; the latest implementation still needs review and verification."
     - "Slices are ordered bootstrap -> bounded scan/report -> metadata/provenance -> forensic signals -> verdict contract -> evaluated model release. ISSUE-006 is gated on human-approved model/data/license/hardware choices."

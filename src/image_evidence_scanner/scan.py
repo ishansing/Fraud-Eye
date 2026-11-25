@@ -34,6 +34,9 @@ def scan_batch(paths: list[str]) -> dict:
                     }
                 image["metadata"] = metadata["metadata"]
                 image["metadata_status"] = metadata["status"]
+                image["image_facts"]["color_space"] = metadata["metadata"].get(
+                    "ICC_Profile:ProfileDescription"
+                )
                 image["parser_coverage"] = [
                     metadata["coverage"],
                     {

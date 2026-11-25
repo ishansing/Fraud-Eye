@@ -128,9 +128,10 @@ def _pixel_signals(image: Image.Image) -> dict:
         }
 
     return {
-        "method": "Pillow channel histograms and population statistics",
-        "channels": channels,
-        "jpeg": jpeg,
+        "method": "Pillow channel histograms/statistics and JPEG quantization/subsampling",
+        "prerequisites": ["A decoded single-frame JPEG or PNG image."],
+        "reference_data": None,
+        "result": {"channels": channels, "jpeg": jpeg},
         "limitations": ["Global image statistics do not localize edits or prove image origin."],
     }
 

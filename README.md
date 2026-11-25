@@ -45,9 +45,9 @@ rejected. Each result includes the original-byte SHA-256 when bytes are read, ba
 available ExifTool metadata, and an `inconclusive` verdict until validated model profiles are
 implemented. Global channel histograms/statistics, PNG chunk counts, and JPEG
 quantization/subsampling are measurements, not proof of origin or localized editing. Files
-rejected before being read
-(including oversized files) have no digest; the
-JSON report states why the digest was not computed.
+rejected before being read (including oversized files) have no digest; the JSON report states
+why the digest was not computed. An embedded ICC profile description is reported as color space
+when ExifTool can read it; otherwise the field is `null`.
 
 Generation and editing assessments are separate. Until a validated local model/profile is
 selected and passes the release gates, both task results and the overall verdict remain
@@ -67,3 +67,15 @@ GPS, device, creator, or prompt values. Treat report paths as private. Terminal 
 printing full metadata values. C2PA validation disables remote-manifest and OCSP fetching;
 fresh online revocation status is not checked. C2PA validation has a 10-second timeout and an
 8 MiB report limit; its worker does not yet have a separate operating-system memory limit.
+
+Each image's `parser_coverage` lists parser name/version, status, covered groups, and errors.
+`metadata_unverified` means extracted values are observations, not authenticated facts.
+Provenance status can be `absent`, `present_but_invalid`, `valid_but_untrusted`,
+`trusted_valid`, `unsupported`, or `validator_error`; the exact validation details and signer
+information are in JSON when available. Absence of provenance is neutral.
+
+JSON reports use schema version `1.0`. The top-level object contains `scan_timestamp`,
+`tool_version`, `batch_status`, and one `images` entry per input. Image entries group identity,
+image facts, metadata/parser coverage, provenance, pixel/file-structure measurements, separate
+generation/editing task records, interpretation, advisory, and failures. Treat the schema as
+versioned: incompatible changes require a version increment.

@@ -64,6 +64,7 @@ def test_cli_scans_jpeg_and_png_and_reports_original_hash_and_facts(tmp_path):
         "height": 3,
         "aspect_ratio": 2 / 3,
         "mode": "RGB",
+        "color_space": None,
         "bit_depth_per_channel": 8,
         "frame_count": 1,
     }
@@ -77,7 +78,14 @@ def test_cli_scans_jpeg_and_png_and_reports_original_hash_and_facts(tmp_path):
     assert first["verdict"] == "inconclusive"
     assert "Verdict: inconclusive" in result.stdout
     assert "Generation: inconclusive (score not_available)" in result.stdout
+    assert "Model/data profile: not configured" in result.stdout
+    assert "Limitations:" in result.stdout
     assert "Advisory: inconclusive" in result.stdout
+    assert result.stdout.index("Verdict:") < result.stdout.index("Generation:")
+    assert result.stdout.index("Generation:") < result.stdout.index("Evidence:")
+    assert result.stdout.index("Evidence:") < result.stdout.index("Model/data profile:")
+    assert result.stdout.index("Model/data profile:") < result.stdout.index("Advisory:")
+    assert result.stdout.index("Advisory:") < result.stdout.index("Limitations:")
 
 
 def test_cli_reports_global_channel_distribution_without_localization(tmp_path):
@@ -89,10 +97,13 @@ def test_cli_reports_global_channel_distribution_without_localization(tmp_path):
     signals = data["images"][0]["pixel_signals"]
 
     assert result.returncode == 0
-    assert [channel["mean"] for channel in signals["channels"]] == [127.5, 64.0, 32.0]
-    assert [channel["maximum"] for channel in signals["channels"]] == [255, 128, 64]
-    assert all(sum(channel["histogram"]) == 2 for channel in signals["channels"])
-    assert signals["jpeg"] is None
+    channels = signals["result"]["channels"]
+    assert [channel["mean"] for channel in channels] == [127.5, 64.0, 32.0]
+    assert [channel["maximum"] for channel in channels] == [255, 128, 64]
+    assert all(sum(channel["histogram"]) == 2 for channel in channels)
+    assert signals["result"]["jpeg"] is None
+    assert signals["prerequisites"]
+    assert signals["reference_data"] is None
     assert "localization" not in signals
 
 
@@ -100,7 +111,8 @@ def test_cli_reports_jpeg_quantization_and_subsampling(tmp_path):
     jpeg = make_image(tmp_path / "photo.jpg", "JPEG")
     result, data = scan_json(tmp_path / "report.json", jpeg)
     image = data["images"][0]
-    jpeg_signals = image["pixel_signals"]["jpeg"]
+    signals = image["pixel_signals"]
+    jpeg_signals = signals["result"]["jpeg"]
 
     assert result.returncode == 0
     assert jpeg_signals["quantization_tables"]
