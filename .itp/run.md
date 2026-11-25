@@ -3,9 +3,9 @@ run:
   goal: "Plan and build the Image Evidence Scanner from PRD.md and SPEC.md"
   scale: standard
   checkpoints: phase
-  next_phase: research
+  next_phase: align
   completed: [research, align, spec, architecture, slice]
-  active_phase: research
+  active_phase: align
   artifacts:
     research: docs/product/research.md
     decisions: docs/product/decisions.md
@@ -30,10 +30,22 @@ run:
     - "Select evaluation corpus/release, label provenance, and split design for the consumer-image population."
     - "Confirm release gates after feasibility study."
     - "Set hardware and batch resource/time budget."
+  handoff:
+    status: needs-human
+    reason: "Feasibility research recommends an evaluation spike but establishes no model, dataset, artifact rights, or release-gate pass."
+    decision: "Approve next step for ISSUE-006 feasibility"
+    options:
+      - "Authorize bounded candidate evaluation (recommended; no production model approval)"
+      - "Keep v1 evidence-only and defer model work"
+    affected_artifacts:
+      - docs/product/research.md
+      - docs/product/decisions.md
+      - docs/work/ISSUE-006.md
+    resume_with: itp-align
   notes:
     - "Implementation checkpoints committed as 0a0f8cb, e14156b, and 94f2a0f. Review approved the implementation checkpoint for verification; see docs/work/review.md."
     - "Local issue tracker configuration recorded in docs/agents/issue-tracker.md; no remote was available, so no external tracker was inferred."
-    - "Owner selected the consumer-image target population, authorized feasibility research/proposal, and chose this Ryzen 9 5900HS / 16 GB / RTX 3060 6 GB machine as a measurement baseline; model/profile approval and numerical resource limits remain open."
+    - "Owner selected the consumer-image target population, authorized feasibility research/proposal, and chose this Ryzen 9 5900HS / 16 GB / RTX 3060 6 GB machine as a measurement baseline; feasibility findings are in docs/product/research.md, but no model/profile is approved."
     - "C2PA report-size limit is checked after the SDK materializes its manifest; no OS worker memory ceiling is set pending resource-budget decisions."
     - "Verification is blocked for full product completion; evidence is in docs/work/verification.md. The local scanner checkpoint passed its current checks."
     - "Scale is standard because initial architecture and implementation boundaries must be established."
