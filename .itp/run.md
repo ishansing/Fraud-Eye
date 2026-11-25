@@ -41,10 +41,11 @@ run:
       - docs/product/research.md
       - docs/product/decisions.md
       - docs/work/ISSUE-006.md
+      - https://github.com/ishansing/Fraud-Eye/issues/1
     resume_with: itp-align
   notes:
     - "Implementation checkpoints committed as 0a0f8cb, e14156b, and 94f2a0f. Review approved the implementation checkpoint for verification; see docs/work/review.md."
-    - "Local issue tracker configuration recorded in docs/agents/issue-tracker.md; no remote was available, so no external tracker was inferred."
+    - "The tracker was configured locally before a remote was available; GitHub Issues are now authoritative. Active ISSUE-006 is GitHub #1; completed slices remain local historical specifications."
     - "Owner selected the consumer-image target population, authorized feasibility research/proposal, and chose this Ryzen 9 5900HS / 16 GB / RTX 3060 6 GB machine as a measurement baseline; feasibility findings are in docs/product/research.md, but no model/profile is approved."
     - "C2PA report-size limit is checked after the SDK materializes its manifest; no OS worker memory ceiling is set pending resource-budget decisions."
     - "Verification is blocked for full product completion; evidence is in docs/work/verification.md. The local scanner checkpoint passed its current checks."
