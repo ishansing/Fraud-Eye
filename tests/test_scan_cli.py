@@ -67,6 +67,12 @@ def test_cli_scans_jpeg_and_png_and_reports_original_hash_and_facts(tmp_path):
         "bit_depth_per_channel": 8,
         "frame_count": 1,
     }
+    assert first["file_structure"]["container"] == "PNG"
+    assert first["file_structure"]["chunk_types"] == {
+        "IHDR": 1,
+        "IDAT": 1,
+        "IEND": 1,
+    }
     assert second["detected_format"] == "JPEG"
     assert first["verdict"] == "inconclusive"
     assert "Verdict: inconclusive" in result.stdout
@@ -93,11 +99,35 @@ def test_cli_reports_global_channel_distribution_without_localization(tmp_path):
 def test_cli_reports_jpeg_quantization_and_subsampling(tmp_path):
     jpeg = make_image(tmp_path / "photo.jpg", "JPEG")
     result, data = scan_json(tmp_path / "report.json", jpeg)
-    jpeg_signals = data["images"][0]["pixel_signals"]["jpeg"]
+    image = data["images"][0]
+    jpeg_signals = image["pixel_signals"]["jpeg"]
 
     assert result.returncode == 0
     assert jpeg_signals["quantization_tables"]
     assert jpeg_signals["subsampling"] in {"4:4:4", "4:2:2", "4:2:0", "unknown"}
+    assert image["file_structure"]["container"] == "JPEG"
+    assert image["file_structure"]["quantization_table_count"] == len(
+        jpeg_signals["quantization_tables"]
+    )
+
+
+def test_cli_bounds_png_chunk_structure_scan(tmp_path):
+    image = make_image(tmp_path / "many-chunks.png")
+    png = bytearray(image.read_bytes())
+    iend_offset = png.rfind(b"IEND") - 4
+    chunk_type = b"vpAg"
+    empty_chunk = struct.pack(">I", 0) + chunk_type + struct.pack(">I", zlib.crc32(chunk_type))
+    png[iend_offset:iend_offset] = empty_chunk * 100_001
+    image.write_bytes(png)
+
+    result, data = scan_json(tmp_path / "report.json", image)
+    structure = data["images"][0]["file_structure"]
+
+    assert result.returncode == 0
+    assert structure["chunk_count"] == 100_000
+    assert structure["chunk_types"] == {"IHDR": 1, "IDAT": 1}
+    assert structure["other_chunk_count"] == 99_998
+    assert structure["truncated"] is True
 
 
 def test_cli_accepts_five_inputs(tmp_path):

@@ -22,8 +22,10 @@ jobs:
         shell: bash
         run: |
           sudo iptables -I OUTPUT 1 -j REJECT
-          trap 'sudo iptables -D OUTPUT 1' EXIT
+          sudo ip6tables -I OUTPUT 1 -j REJECT
+          trap 'sudo ip6tables -D OUTPUT 1; sudo iptables -D OUTPUT 1' EXIT
           python -m pytest -q
           sudo iptables -nvxL OUTPUT | awk '$3 == "REJECT" { packets += $1 } END { exit packets != 0 }'
+          sudo ip6tables -nvxL OUTPUT | awk '$3 == "REJECT" { packets += $1 } END { exit packets != 0 }'
       - run: ruff check .
       - run: ruff format --check .

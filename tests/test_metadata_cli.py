@@ -141,3 +141,25 @@ def test_exiftool_output_limit_is_enforced(tmp_path):
     assert result.returncode != 0
     assert data["images"][0]["parser_coverage"][0]["status"] == "error"
     assert "16 MiB" in data["images"][0]["parser_coverage"][0]["errors"][0]
+
+
+def test_exiftool_metadata_nesting_limit_is_reported(tmp_path):
+    image = tmp_path / "plain.png"
+    Image.new("RGB", (1, 1), "red").save(image)
+    executable_dir = tmp_path / "bin"
+    executable_dir.mkdir()
+    exiftool = executable_dir / "exiftool"
+    nested_value = "[" * 65 + "0" + "]" * 65
+    payload = f'[{{"SourceFile":"-","Payload":{nested_value}}}]'
+    exiftool.write_text(f"#!{sys.executable}\nprint({payload!r})\n")
+    exiftool.chmod(0o755)
+    env = os.environ.copy()
+    env["PATH"] = str(executable_dir)
+    report = tmp_path / "report.json"
+
+    result = run_cli("--json-output", report, image, env=env)
+    data = json.loads(report.read_text())
+
+    assert result.returncode != 0
+    assert data["images"][0]["metadata_status"] == "error"
+    assert "nesting limit" in data["images"][0]["parser_coverage"][0]["errors"][0]

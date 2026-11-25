@@ -21,7 +21,7 @@ Extend the scan with versioned metadata coverage, explicit parser failures, sens
 ## Relevant files/modules
 
 - `src/image_evidence_scanner/{metadata,provenance,scan,report}.py`
-- `tests/{test_metadata,test_provenance,test_offline_scan}.py`
+- `tests/{test_metadata_cli,test_provenance,test_scan_cli}.py`
 - Bounded local test fixtures and `README.md`
 
 ## Dependencies
@@ -43,7 +43,7 @@ python -m pytest -q tests/test_metadata_cli.py
 ruff check .
 ```
 
-**Pass bar:** all tests pass; fixtures demonstrate EXIF, XMP, IPTC, parser coverage/errors, missing-parser behavior, timeout, and output bounds; C2PA absence is neutral and the report names the offline policy; the network-denied CI test observes zero outbound packets; malformed and oversized blocks remain within configured limits and do not suppress sibling image results.
+**Pass bar:** all tests pass; fixtures demonstrate EXIF, XMP, IPTC, parser coverage/errors, missing-parser behavior, timeout, output, and nesting bounds; C2PA absence is neutral and the report names the offline policy; network-denied CI observes zero IPv4 and IPv6 outbound packets; malformed and oversized blocks remain within configured limits and do not suppress sibling image results.
 
 ## Documentation impact
 

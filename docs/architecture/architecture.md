@@ -1,17 +1,18 @@
 # Image Evidence Scanner architecture
 
-**Status:** Initial architecture for implementation planning. The repository currently contains no application code; this document describes intended modules and required controls, not implemented protections.
+**Status:** The initial architecture has been implemented through ISSUE-005; model-backed
+classification remains gated on the decisions recorded in `.itp/run.md`.
 
 ## System shape
 
-An offline Python CLI accepts explicit paths, processes each image sequentially, and renders a concise terminal result plus an optional versioned JSON report. Modules remain in one process except the evaluated metadata parser subprocess. No server, upload surface, database, cloud inference, or scan-time download exists in v1.
+An offline Python CLI accepts explicit paths, processes each image sequentially, and renders a concise terminal result plus an optional versioned JSON report. ExifTool and C2PA validation run in bounded child processes. No server, upload surface, database, cloud inference, or scan-time download exists in v1.
 
 ```text
 src/image_evidence_scanner/
   cli.py                 argument parsing, exit status, top-level orchestration
   scan.py                per-file lifecycle and failure isolation
-  image_input.py         bounded read, digest, decode, image facts, global pixel signals
-  metadata.py            bounded ExifTool invocation and parser coverage
+  image_input.py         bounded read, digest, decode, image facts, pixel signals, file structure
+  metadata.py            bounded ExifTool invocation, JSON size/depth checks, parser coverage
   provenance.py          bounded C2PA worker orchestration
   c2pa_worker.py         offline C2PA validation in a killable child process
   assessment.py          task result validation and verdict/advisory rules

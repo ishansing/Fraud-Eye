@@ -4,6 +4,7 @@ import subprocess
 import threading
 
 MAX_METADATA_BYTES = 16 * 1024 * 1024
+MAX_METADATA_NESTING = 64
 PARSER_TIMEOUT_SECONDS = 5
 
 
@@ -42,6 +43,13 @@ def extract_metadata(image_bytes: bytes) -> dict:
         coverage["errors"].append("ExifTool reported an extraction failure")
         return {"status": "error", "metadata": {}, "coverage": coverage}
 
+    if _exceeds_json_nesting(output):
+        coverage["status"] = "error"
+        coverage["errors"].append(
+            f"ExifTool JSON exceeded the {MAX_METADATA_NESTING}-level nesting limit"
+        )
+        return {"status": "error", "metadata": {}, "coverage": coverage}
+
     try:
         parsed = json.loads(output)
         if not isinstance(parsed, list) or len(parsed) != 1 or not isinstance(parsed[0], dict):
@@ -56,6 +64,29 @@ def extract_metadata(image_bytes: bytes) -> dict:
     coverage["groups"] = sorted({key.split(":", 1)[0] for key in metadata if ":" in key})
     coverage["status"] = "complete"
     return {"status": "complete", "metadata": metadata, "coverage": coverage}
+
+
+def _exceeds_json_nesting(output: bytes) -> bool:
+    depth = 0
+    in_string = False
+    escaped = False
+    for byte in output:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == ord("\\"):
+                escaped = True
+            elif byte == ord('"'):
+                in_string = False
+        elif byte == ord('"'):
+            in_string = True
+        elif byte in (ord("["), ord("{")):
+            depth += 1
+            if depth > MAX_METADATA_NESTING:
+                return True
+        elif byte in (ord("]"), ord("}")):
+            depth -= 1
+    return False
 
 
 def _run_exiftool(executable: str, image_bytes: bytes) -> tuple[int, bytes | None]:

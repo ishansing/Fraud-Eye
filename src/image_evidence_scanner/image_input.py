@@ -10,6 +10,7 @@ from PIL import Image, ImageStat, JpegImagePlugin, UnidentifiedImageError
 
 MAX_FILE_BYTES = 100 * 1024 * 1024
 MAX_PIXELS = 50_000_000
+MAX_PNG_CHUNKS = 100_000
 
 
 def inspect_image(input_path: str) -> tuple[dict, bytes | None]:
@@ -85,6 +86,7 @@ def inspect_image(input_path: str) -> tuple[dict, bytes | None]:
                     "frame_count": frame_count,
                 }
                 result["pixel_signals"] = _pixel_signals(image)
+                result["file_structure"] = _file_structure(image, image_bytes)
     except (Image.DecompressionBombError, Image.DecompressionBombWarning):
         result["error"] = "image exceeds the decoder pixel-safety limit"
         return result, image_bytes
@@ -151,3 +153,59 @@ def _bit_depth_per_channel(image: Image.Image) -> int | None:
         "I": 32,
         "F": 32,
     }.get(image.mode)
+
+
+def _file_structure(image: Image.Image, image_bytes: bytes) -> dict:
+    if image.format == "JPEG":
+        sampling = JpegImagePlugin.get_sampling(image)
+        return {
+            "container": "JPEG",
+            "quantization_table_count": len(image.quantization or {}),
+            "chroma_subsampling": {0: "4:4:4", 1: "4:2:2", 2: "4:2:0"}.get(sampling, "unknown"),
+        }
+
+    known_chunks = {
+        "IHDR",
+        "PLTE",
+        "IDAT",
+        "IEND",
+        "tRNS",
+        "iCCP",
+        "sRGB",
+        "gAMA",
+        "cHRM",
+        "eXIf",
+        "tEXt",
+        "zTXt",
+        "iTXt",
+    }
+    chunk_types = {}
+    other_chunk_count = 0
+    chunk_count = 0
+    offset = 8
+    truncated = False
+    while offset + 12 <= len(image_bytes) and chunk_count < MAX_PNG_CHUNKS:
+        chunk_length = int.from_bytes(image_bytes[offset : offset + 4], "big")
+        end = offset + 12 + chunk_length
+        if end > len(image_bytes):
+            truncated = True
+            break
+        chunk_type = image_bytes[offset + 4 : offset + 8].decode("ascii", "replace")
+        chunk_count += 1
+        if chunk_type in known_chunks:
+            chunk_types[chunk_type] = chunk_types.get(chunk_type, 0) + 1
+        else:
+            other_chunk_count += 1
+        offset = end
+        if chunk_type == "IEND":
+            break
+    else:
+        truncated = offset < len(image_bytes)
+
+    return {
+        "container": "PNG",
+        "chunk_count": chunk_count,
+        "chunk_types": chunk_types,
+        "other_chunk_count": other_chunk_count,
+        "truncated": truncated,
+    }

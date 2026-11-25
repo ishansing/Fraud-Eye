@@ -43,8 +43,9 @@ Scans accept one to five explicit files, reject directories and URLs, and curren
 single-frame JPEG and PNG. Files over 100 MiB and images over 50,000,000 decoded pixels are
 rejected. Each result includes the original-byte SHA-256 when bytes are read, basic image facts,
 available ExifTool metadata, and an `inconclusive` verdict until validated model profiles are
-implemented. Global channel histograms/statistics and JPEG quantization/subsampling are
-measurements, not proof of origin or localized editing. Files rejected before being read
+implemented. Global channel histograms/statistics, PNG chunk counts, and JPEG
+quantization/subsampling are measurements, not proof of origin or localized editing. Files
+rejected before being read
 (including oversized files) have no digest; the
 JSON report states why the digest was not computed.
 
@@ -52,7 +53,17 @@ Generation and editing assessments are separate. Until a validated local model/p
 selected and passes the release gates, both task results and the overall verdict remain
 `inconclusive`; no score or “no configured signal” advisory is emitted.
 
+With a validated profile, `likely_ai_generated`, `likely_ai_edited`, and
+`likely_ai_generated_and_edited` describe only the configured detector results—not certainty,
+authenticity, or event truth. `no_configured_ai_signal_crossed_threshold` means only that every
+required configured task ran below its validated threshold. `recommended` means further
+inspection is advised; `not_indicated_by_configured_models` is allowed only when all required
+tasks and the profile validation gate pass; `inconclusive` means the required evidence is
+unavailable, invalid, conflicting, or out of scope. Scores are model-specific and uncalibrated
+unless a named independent calibration profile justifies probability language.
+
 JSON output is local and includes parseable metadata by default. Metadata may contain sensitive
 GPS, device, creator, or prompt values. Treat report paths as private. Terminal output avoids
 printing full metadata values. C2PA validation disables remote-manifest and OCSP fetching;
-fresh online revocation status is not checked.
+fresh online revocation status is not checked. C2PA validation has a 10-second timeout and an
+8 MiB report limit; its worker does not yet have a separate operating-system memory limit.
