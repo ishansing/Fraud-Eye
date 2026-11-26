@@ -48,7 +48,7 @@ The current deliverable remains deliberately narrower: a loopback-only REST API 
 
 The adopted v1.1 target (see `SPECv3.md`) proposes PDF/JPEG/PNG/TIFF ingestion, multi-page processing, metadata/font and vision forensics, ONNX OCR, deterministic/statistical checks, model-based scoring, analyst feedback, webhooks, a review UI, and local persistence. None is part of the current runtime. Real-document handling, persistence, authenticated remote access, and any non-`INCONCLUSIVE` profile require separate owner approval, architecture, privacy/security/legal review, and representative evaluation evidence.
 
-The initial product proposal names target KPIs of at least 96% precision on tampered documents, at least 93% recall on synthetic/AI documents, at most 2 seconds per page, and 50 base / 300 peak requests per second. These are unverified release targets, not current performance claims.
+SPECv3 proposes at least 96% precision with Doc-AUC/Region-F1 tracking, at least 93% recall, GPU latency at or below 1 second per page, CPU fallback latency at or below 3.5 seconds per page, at or below 4.5 seconds for a 5-page PDF, peak VRAM at or below 3.5 GB, and peak RAM at or below 4.5 GB. These are unverified targets, not current performance claims; the target does not retain the earlier 50/300 RPS objective.
 
 ## 5. Boundaries and safeguards
 

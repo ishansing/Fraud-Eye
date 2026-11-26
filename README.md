@@ -33,5 +33,6 @@ Requests are limited to 1 MiB and decoded images to 4,000,000 pixels.
 See [`PRD.md`](PRD.md), [`SPEC.md`](SPEC.md), and
 [`docs/product/acceptance-criteria.md`](docs/product/acceptance-criteria.md) for the current
 scope and project trajectory. [`SPECv3.md`](SPECv3.md) is the supplied long-term target source;
-its higher-risk features remain gated. Work status is tracked in
+its higher-risk features remain gated. See the [research notes](docs/product/research.md) and
+[open target questions](docs/product/unknowns.md) before changing those gates. Work status is tracked in
 [GitHub Issues](https://github.com/ishansing/Fraud-Eye/issues).

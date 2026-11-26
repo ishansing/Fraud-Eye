@@ -30,11 +30,7 @@ Source: owner alignment on 2026-11-26, based on `SPECv2.md` and adoption of `SPE
 
 ## Open questions
 
-- How should the target's “Zero-Retention” NFR-5 be reconciled with 24-hour raw-file storage; what exact deletion, encryption, backup, crash-recovery, and SQLite rules apply?
-- What authentication, roles, credential lifecycle, and webhook registration model will secure the eventual API and review console?
-- Which target parsers, vision/OCR models, scorer, model artifacts, and dataset licenses/provenance are feasible and approved?
-- What evaluation corpus and thresholds establish generalizable screening quality without turning signals into consequential decisions?
-- Which target resource/time budgets, hardware, and fallback behavior can be measured and supported?
-- What additional privacy, security, legal, and operational review is required before any real-document handling or non-loopback access?
+- See [`unknowns.md`](unknowns.md) for the target's unresolved privacy, security, data, model,
+  evaluation, and runtime questions.
 
 These decisions authorize a synthetic-data prototype only. They do not authorize production hosting, real customer data, model claims, or consequential decisions.
