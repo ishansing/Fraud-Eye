@@ -19,6 +19,9 @@ Source: owner alignment on 2026-11-26, based on `SPECv2.md`.
 - **Verdict gate:** Until the applicable evaluation gates pass, return `INCONCLUSIVE`; enable `PASS`/`FLAGGED` only for an approved profile that meets the gates.
 - **Heatmaps:** Defer heatmap generation and URLs in the first prototype. Revisit access and lifetime when designing the review-console flow for memory-only processing.
 - **Phasing:** The first slice is a local API using synthetic fixtures. Defer webhook delivery, review console, Kubernetes/GPU deployment, and real-document handling until the core flow and privacy/security design are validated.
+- **First format:** Begin with one PNG fixture per request; do not enable PDF, JPEG, or TIFF parsing yet.
+- **Local API:** Use the Python standard library HTTP server, bound to `127.0.0.1` only. No authentication is added for this loopback-only prototype.
+- **Prototype bounds:** Request body ≤ 1 MiB, one PNG page, ≤ 4,000,000 decoded pixels, no nested-document parser (depth 0), and a 2-second socket/request-read timeout. Processing is limited to bounded PNG decoding and metadata-free response generation.
 - **Release evidence:** Treat the provided precision, recall, latency, and throughput numbers as release gates to measure, not established performance claims.
 
 ## Open questions

@@ -10,6 +10,17 @@ acceptance criteria. Architecture and implementation have not yet started for Fr
 code currently in `src/` is the earlier Image Evidence Scanner CLI;
 it is not a Fraud Netra API and must not be used to process real customer documents.
 
+## Local prototype
+
+The first prototype endpoint accepts only one project-generated synthetic PNG per request.
+It binds to `127.0.0.1:8000`, keeps request data in memory, and always returns `INCONCLUSIVE`;
+it does not determine whether an input is synthetic or make a lending, identity, or KYC decision.
+Never submit real or sensitive documents.
+
+Run with `python -m fraud_netra` after installing the project dependencies. The
+`POST /v1/documents/analyze` endpoint expects multipart fields `file` (PNG) and `document_type`.
+Requests are limited to 1 MiB and decoded images to 4,000,000 pixels.
+
 ## Prototype boundary
 
 - Local REST API bound to loopback only.

@@ -19,7 +19,8 @@ The Fraud Netra product target is an automated REST API, webhook notification se
 
 ### Current prototype boundary
 
-- The first build is a **local-only REST API vertical slice** intended only for project-generated synthetic fixtures. It MUST bind only to loopback. The prototype does not verify whether arbitrary uploaded content is synthetic; do not send real customer, identity, financial, or other sensitive documents.
+- The first build is a **local-only REST API vertical slice** intended only for project-generated synthetic PNG fixtures. It MUST bind only to `127.0.0.1`. It accepts one frame, a request body no larger than 1 MiB, and no more than 4,000,000 decoded pixels. The prototype does not verify whether arbitrary uploaded content is synthetic; do not send real customer, identity, financial, or other sensitive documents.
+- Request reads have a 2-second socket timeout. No nested-document parser is enabled (parser depth 0); PDF, JPEG, and TIFF are not supported by the first slice.
 - Uploaded bytes and intermediate artifacts MUST remain in memory for the request lifetime; the prototype MUST NOT persist source documents, extracted document content, or generated artifacts to disk or external services.
 - Until an approved profile passes its applicable evaluation gates, every successful analysis MUST return `INCONCLUSIVE`. `PASS` and `FLAGGED` are reserved for a later approved screening profile; they are never lending, credit, onboarding, or KYC decisions.
 - Heatmap generation and `heatmap_overlay_url` are deferred from the first prototype. Webhooks, the review console, multi-tenant/public hosting, Kubernetes, and GPU deployment are later phases.
@@ -125,6 +126,7 @@ Every successful analysis MUST return HTTP `200 OK` with the following top-level
 | Field | Type | Description |
 | --- | --- | --- |
 | `document_id` | `string` | Unique identifier assigned to the analyzed document (e.g., `"doc_8fbc2390a12e"`). |
+| `sha256` | `string` | SHA-256 digest of the exact submitted PNG bytes, computed before decoding. |
 | `authenticity_score` | `number \| null` | A `0–100` score only when a validated profile defines its semantics; otherwise `null`. |
 | `verdict` | `string` | Prototype enum: `"INCONCLUSIVE"`. An approved profile may later return `"PASS"` or `"FLAGGED"`. |
 | `processing_time_ms` | `integer` | End-to-end server-side processing duration in milliseconds. |

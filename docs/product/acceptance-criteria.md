@@ -7,6 +7,7 @@ exist today.
 ## Prototype acceptance criteria
 
 - **Prototype boundary:** The service binds only to loopback. Tests and fixtures use synthetic documents; no real customer, financial, or identity records are accepted as project test data.
+- **First slice:** One generated PNG per request; body ≤ 1 MiB; decoded content ≤ 4,000,000 pixels; one frame; nested parser depth 0; request-read timeout 2 seconds. The server cannot verify that caller-provided data is synthetic.
 - **REQ-1:** Each implemented format is documented. Supported synthetic fixtures are accepted; malformed, unsupported, password-locked, and unreadable files return structured error codes.
 - **REQ-2:** A request failure is isolated and does not corrupt another request. Multi-page and bundle behavior is deferred and not claimed.
 - **REQ-3:** Byte, page, pixel, parser-depth, and time limits are configured and checked before expensive work. Limit failures return bounded, structured errors.

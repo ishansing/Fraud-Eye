@@ -35,9 +35,15 @@ local, synthetic-data, in-memory REST API prototype.
 - Owner-aligned decisions in `docs/product/decisions.md`
 - Normative prototype scope in `SPEC.md`
 
+## Status
+
+Architecture decisions are recorded in [`architecture.md`](../architecture/architecture.md)
+and [ADR 0004](../architecture/ADR/0004-loopback-png-prototype.md). Implementation is tracked
+separately in [ISSUE-008](ISSUE-008.md).
+
 ## Out of scope
 
-- Implementing API handlers, selecting forensic models, or processing real customer documents.
+- Selecting forensic models or processing real customer documents.
 - Public deployment, webhooks, review UI, GPU/Kubernetes infrastructure, and 24-hour retention.
 
 ## Validation

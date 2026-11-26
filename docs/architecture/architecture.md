@@ -1,7 +1,57 @@
-# Image Evidence Scanner architecture
+# Fraud Netra architecture
 
-**Historical:** This architecture describes the superseded offline image CLI. It does not apply
-to Fraud Netra; a new local API architecture is the next lifecycle phase.
+**Historical:** The original architecture below describes the superseded offline image CLI.
+Fraud Netra's current architecture is recorded first; the historical design remains for provenance.
+
+## Fraud Netra local prototype
+
+The first vertical slice accepts one project-generated synthetic PNG per request. It validates
+and decodes the image in memory, computes the original-byte SHA-256, and returns an
+`INCONCLUSIVE` screening result. It does not claim to detect whether an image is synthetic and
+does not emit forensic findings.
+
+```text
+src/fraud_netra/
+  server.py       loopback-only HTTP entrypoint and bounded request/response handling
+tests/
+  test_api.py     public HTTP seam using generated synthetic PNG fixtures
+```
+
+| Interface / seam | Contract | Requirements |
+|---|---|---|
+| `python -m fraud_netra` | Starts only on `127.0.0.1`; no host override | NFR-8 |
+| `POST /v1/documents/analyze` | `multipart/form-data` with `file` (PNG) and `document_type`; body ≤ 1 MiB | REQ-1–4 |
+| Successful response | HTTP 200 JSON with `document_id`, `sha256`, `verdict=INCONCLUSIVE`, null scores, reason, duration, empty anomalies, null heatmap | REQ-4, REQ-17–18 |
+| Error response | Stable JSON `error.code` and `error.message`; no input bytes or parser details | REQ-1, REQ-3 |
+| Test seam | End-to-end HTTP request against an explicitly loopback-bound ephemeral port | REQ-1–4, REQ-18, NFR-5, NFR-8 |
+
+The request parser reads only a declared, bounded `Content-Length`, with a 2-second socket
+timeout. PNG validation rejects animation/multiple frames and images above 4,000,000 pixels;
+Pillow's decompression-bomb safeguards remain enabled. Nested-document parser depth is 0 because
+the prototype has no PDF or archive parser. No metadata extraction, disk writes, subprocesses, or
+outbound network access occur in the request path. The synthetic-only constraint is an operator
+constraint, not a property that the server can reliably verify.
+
+The server uses Python's standard library HTTP server and existing Pillow dependency; no web
+framework or multipart package is needed. This keeps the first build dependency-light, at the
+cost of a deliberately narrow single-process prototype not suitable for public hosting.
+
+### Security assumptions and mitigations
+
+- The only intended caller is the local operator; the listener is fixed to IPv4 loopback and has
+  no authentication. Other local processes are not considered trusted isolation boundaries.
+- Hostile or accidental requests are capped before parsing; accepted image bytes are decoded
+  under a pixel limit, never included in logs/errors, and held only in request memory.
+- Slow request bodies are bounded by the socket timeout. This is not a hard CPU deadline; decoder
+  resource exposure is limited by the byte and pixel caps and the narrow PNG-only parser path.
+- There is no persistent store, subprocess, external integration, webhook, or download endpoint.
+- Do not send real customer data. Local callers can still send such data, so the tool cannot
+  guarantee synthetic-only use.
+
+Architecture decisions:
+- [ADR 0004: Loopback PNG prototype](ADR/0004-loopback-png-prototype.md)
+
+## Historical Image Evidence Scanner architecture
 
 **Status:** The initial architecture has been implemented through ISSUE-005; model-backed
 classification remains gated on the decisions recorded in `.itp/run.md`.
