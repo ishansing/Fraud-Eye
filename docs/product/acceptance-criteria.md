@@ -1,8 +1,8 @@
 # Acceptance criteria
 
 These criteria verify [`SPEC.md`](../../SPEC.md). The current delivery is the local
-synthetic-data prototype. Later-phase criteria are release gates, not claims that the features
-exist today.
+synthetic-data prototype. SPECv3's hybrid-MVP requirements are future-target gates, not claims
+that the features exist or are authorized today.
 
 ## Prototype acceptance criteria
 
@@ -23,13 +23,14 @@ exist today.
 - **NFR-5:** Source bytes, extracted document content, and derived artifacts are not written to disk or external services; in-memory data is released at request completion.
 - **NFR-8:** The API binds to loopback only. No public listener, webhook, or heatmap download route exists.
 
-## Later-phase requirements
+## Future-target acceptance gates (SPECv3)
 
-- **NFR-1–2:** Held-out evaluation measures precision and recall on the named target population; the proposed 96% precision and 93% recall targets pass before production claims.
-- **NFR-3–4:** Load tests on the approved deployment verify the proposed ≤2 seconds/page and 50/300 RPS targets.
-- **NFR-6:** Training, calibration, and held-out data are source-disjoint and cover the target documents and transformations.
-- **NFR-7:** Model, parser, policy, profile, and threshold versions are reproducible and recorded.
-- **NFR-8:** Before external access, TLS, authentication, authorization, tenant isolation, privacy review, and security review are verified.
-- **REQ-19–20:** Webhook signing/retry behavior and analyst review/heatmap behavior have their own integration and access-control tests.
-- `PASS`/`FLAGGED` remain screening signals only; they do not approve or reject credit, lending, onboarding, identity, or KYC applications.
-- Any transition to real-document handling or persistence requires owner approval and documented privacy/security/legal review.
+- **REQ-1–16:** Each supported format, parser/signal layer, bundle isolation rule, checksum, ledger invariant, and anomaly type has bounded implementation and synthetic-fixture coverage before it is enabled.
+- **REQ-17–18:** Scores and `PASS`/`FLAGGED` are enabled only for a versioned profile after calibration and held-out evaluation; deterministic circuit-breaker tests cover arithmetic, identity checksums, and critical localization findings. These values remain screening signals and never trigger credit, lending, onboarding, identity, or KYC decisions.
+- **REQ-19–20.1:** Webhook authentication/retry, UI access, heatmap authorization, and feedback storage have separate security, privacy, and integration tests before release.
+- **NFR-1–2, NFR-6:** The three proposed evaluation tiers use licensed, source-disjoint data and establish precision, recall, localization, degradation curves, and ablation results before any performance claim.
+- **NFR-3–4:** Profiling on the supported 4–8 GB laptop GPU and CPU fallback measures page latency, peak VRAM/RAM, and worker limits. Targets are not claimed until measured.
+- **NFR-5:** The 24-hour file TTL, encryption, deletion guarantees, crash/backup behavior, and SQLite data fields are explicitly approved and tested before storage is implemented. This is not “zero retention.”
+- **NFR-7:** Parser, model, data, profile, and cutoff versions are reproducible and recorded before non-inconclusive output.
+- **NFR-8:** Any non-loopback exposure has defined authentication, authorization, TLS, path safety, and tenant isolation, plus security/privacy/legal review.
+- Any transition to real-document handling, persistence, non-inconclusive outcomes, or external access requires separate owner approval and documented privacy/security/legal review.

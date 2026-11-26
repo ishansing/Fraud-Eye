@@ -4,18 +4,18 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Approved local synthetic-data prototype scope; not yet implemented |
-| Version | 1.0.0-MVP |
+| Status | Long-term target adopted; current implementation remains safety-gated |
+| Version | 1.1.0-Hybrid-MVP target |
 | Updated | 2026-11-26 |
-| Normative requirements | [SPEC.md](SPEC.md), based on [SPECv2.md](SPECv2.md) |
+| Normative requirements | [SPEC.md](SPEC.md), adapted from [SPECv3.md](SPECv3.md) |
 | Acceptance criteria | [Acceptance criteria](docs/product/acceptance-criteria.md) |
 | Decisions | [Project decisions](docs/product/decisions.md) |
 
 ## 1. Product outcome
 
-Fraud Netra is a document-screening system for Lending, Underwriting, and KYC operations. Its long-term target accepts financial and identity documents, collects metadata, image, OCR/layout, and deterministic financial/identity signals, and presents findings for human review.
+Fraud Netra's long-term target is a single-node document-screening system for Lending, Underwriting, and KYC review. The adopted target proposes four forensic layers, a calibrated score, profile-gated screening signals, analyst review, and a local modular-monolith deployment. These are target capabilities, not implemented or validated results.
 
-The current project deliverable is deliberately narrower: a local-only REST API prototype exercised with synthetic documents. It demonstrates safe ingestion, document identity, bounded parsing, and a structured screening response without handling real customer data or claiming validated detection performance.
+The current deliverable remains deliberately narrower: a loopback-only REST API prototype exercised with generated synthetic PNG fixtures. It validates a bounded image, returns its digest, and reports `INCONCLUSIVE`; it does not perform forensics or claim validated detection performance.
 
 ## 2. Users and goals
 
@@ -30,9 +30,9 @@ The current project deliverable is deliberately narrower: a local-only REST API 
 1. Accept supported document formats through a clear, bounded API.
 2. Preserve source identity with a SHA-256 digest computed before transformations.
 3. Extract explainable metadata, visual, OCR/layout, and deterministic logic findings as those layers are validated.
-4. Keep synthetic/test inputs and derived content in memory for the prototype request lifetime.
-5. Return `INCONCLUSIVE` until a task/profile has evidence to support a stronger screening signal.
-6. Make findings useful for human review without deciding credit, lending, identity, or KYC outcomes.
+4. Keep synthetic/test inputs and derived content in memory for the current prototype request lifetime.
+5. Return `INCONCLUSIVE` until a task/profile has passed its evaluation and release gates.
+6. Make findings useful for human review; never make or trigger credit, lending, onboarding, identity, or KYC decisions.
 
 ## 3. Current prototype scope
 
@@ -46,7 +46,7 @@ The current project deliverable is deliberately narrower: a local-only REST API 
 
 ## 4. Product vision beyond the prototype
 
-The broader product target includes multi-page PDF/TIFF and image inputs, four forensic layers, per-document screening scores, gated `PASS`/`FLAGGED` signals, authenticated integrations, and a human review console. These features require separate architecture, privacy/security decisions, representative evaluation data, and release evidence. They are not implied by the prototype’s completion.
+The adopted v1.1 target (see `SPECv3.md`) proposes PDF/JPEG/PNG/TIFF ingestion, multi-page processing, metadata/font and vision forensics, ONNX OCR, deterministic/statistical checks, model-based scoring, analyst feedback, webhooks, a review UI, and local persistence. None is part of the current runtime. Real-document handling, persistence, authenticated remote access, and any non-`INCONCLUSIVE` profile require separate owner approval, architecture, privacy/security/legal review, and representative evaluation evidence.
 
 The initial product proposal names target KPIs of at least 96% precision on tampered documents, at least 93% recall on synthetic/AI documents, at most 2 seconds per page, and 50 base / 300 peak requests per second. These are unverified release targets, not current performance claims.
 
@@ -67,9 +67,9 @@ Production readiness is a separate milestone requiring held-out evaluation, the 
 
 ## 7. Trajectory
 
-1. Reconcile this PRD, `SPEC.md`, and acceptance criteria with the owner-approved prototype scope.
-2. Redesign architecture and threat model for a local in-memory API handling synthetic fixtures.
-3. Implement the smallest end-to-end ingestion and response slice.
-4. Add deterministic metadata and document-logic findings with synthetic tests.
-5. Evaluate OCR/vision candidates and data rights before model-backed results.
-6. Revisit webhooks, review UI, external hosting, retention, and real-document handling only after security/privacy review and owner approval.
+1. Keep the current synthetic-only API as the safe development baseline.
+2. Break the v1.1 target into independently testable slices; resolve the retention, authentication, evaluation-data, and resource-budget gaps first.
+3. Build metadata/container and deterministic logic layers using synthetic fixtures only.
+4. Evaluate OCR/vision candidates, dataset licenses, and model validity before emitting model-based signals.
+5. Design the target modular monolith, local auth, SQLite audit data, and ephemeral storage only after architecture and threat-model review.
+6. Enable real documents or stronger screening signals only after separate approval and the applicable security, privacy, legal, and evaluation gates.

@@ -1,8 +1,9 @@
 # Epics threat model
 
 **Historical:** This threat model covers the superseded local image-scanner CLI. It does not
-cover Fraud Netra's API, sensitive document data, or new trust boundaries; threat modeling must
-be revisited before Fraud Netra implementation or any external exposure.
+cover Fraud Netra's implemented local PNG API or SPECv3's proposed document, model, storage,
+authentication, and webhook flows. Threat modeling those future trust boundaries is required
+before real-document handling, persistence, non-loopback exposure, or non-inconclusive output.
 
 ## Executive summary
 

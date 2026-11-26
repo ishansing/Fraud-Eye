@@ -51,6 +51,21 @@ cost of a deliberately narrow single-process prototype not suitable for public h
 Architecture decisions:
 - [ADR 0004: Loopback PNG prototype](ADR/0004-loopback-png-prototype.md)
 
+## SPECv3 single-node target (planning only)
+
+The adopted future target proposes a FastAPI modular monolith with bounded CPU workers, serialized
+GPU inference, local SQLite, and short-lived artifact storage. The framework and deployment
+pattern in `SPECv3.md` are target proposals, not yet an implementation architecture. No target
+parser, model, database, retention worker, authentication system, webhook, or review UI is
+enabled by this adoption.
+
+Before designing or implementing those modules, resolve the open decisions in
+[`../product/decisions.md`](../product/decisions.md), including the conflict between “zero
+retention” and 24-hour raw-file storage. Complete a threat model for sensitive documents,
+authenticated users, persistence, artifact access, and webhook delivery. Maintain the current
+prototype's loopback, synthetic-only, memory-only, `INCONCLUSIVE` controls until the required
+approvals and reviews are recorded.
+
 ## Historical Image Evidence Scanner architecture
 
 **Status:** The initial architecture has been implemented through ISSUE-005; model-backed

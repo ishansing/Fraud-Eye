@@ -1,217 +1,233 @@
-# Fraud Netra — Product Specification
+# Fraud Netra — Product & Engineering Specification
 
 | Field | Value |
 | --- | --- |
-| Status | Approved for local synthetic-data prototype; production use is blocked |
-| Version | 1.0.0-MVP |
+| Status | Adopted as the long-term target; current implementation remains safety-gated |
+| Version | 1.1.0-Hybrid-MVP |
 | Updated | 2026-11-26 |
-| Product requirements | [PRD.md](PRD.md) |
-| Acceptance criteria | [Acceptance criteria](docs/product/acceptance-criteria.md) |
-| Target audience | Lending, Underwriting & KYC Risk Operations |
+| Deployment Profile | Single-Node Modular Monolith (Laptop GPU 4–8 GB VRAM FP16 + CPU Fallback) |
+| Target Audience | Lending, Underwriting & KYC Risk Operations |
 
-## 1. Purpose and authority
+## 1. Purpose and Authority
 
-This document defines the normative behavior of **Fraud Netra v1.0.0-MVP**. The product direction is document screening for Lending, Underwriting, and KYC operations. This specification incorporates the owner-approved prototype limits recorded in `docs/product/decisions.md`; `SPECv2.md` is retained as the submitted source proposal, with the canonical project name updated to Fraud Netra. Acceptance criteria define the prototype implementation gate, while later-stage requirements remain explicit.
+This document records the long-term target behavior of **Fraud Netra v1.1.0-Hybrid-MVP**, an automated synthetic and tampered document screening system for FinTech and lending risk operations. It describes a proposed single-node architecture and compute profile; it does not claim these capabilities are implemented, validated, or authorized for real-document use. Acceptance criteria verify each `REQ-*` and `NFR-*` identifier below when the relevant phase is separately approved.
 
-## 2. Product boundary
+## 2. Product Boundary
 
-The Fraud Netra product target is an automated REST API, webhook notification service, and Human-in-the-Loop (HITL) review console. It is intended to ingest financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), execute a four-layer forensics pipeline, and present screening findings. Scores, binary screening signals, and localization are future profile-gated capabilities, not prototype output.
+Fraud Netra is a self-contained REST API, asynchronous webhook notification service, and Human-in-the-Loop (HITL) review console. It ingests unstructured financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), executes a four-layer hybrid forensics pipeline (container/font-subset metadata, frequency-domain and FP16 vision segmentation, ONNX OCR/font geometry, and deterministic/statistical financial logic), and outputs an explainable `0–100` authenticity score, a binary `PASS` or `FLAGGED` verdict, structured anomaly details, localized tampering heatmaps, and an analyst feedback hook for active recalibration.
 
-### Current prototype boundary
+### Current implementation authorization and safety gate
 
-- The first build is a **local-only REST API vertical slice** intended only for project-generated synthetic PNG fixtures. It MUST bind only to `127.0.0.1`. It accepts one frame, a request body no larger than 1 MiB, and no more than 4,000,000 decoded pixels. The prototype does not verify whether arbitrary uploaded content is synthetic; do not send real customer, identity, financial, or other sensitive documents.
-- Request reads have a 2-second socket timeout. No nested-document parser is enabled (parser depth 0); PDF, JPEG, and TIFF are not supported by the first slice.
-- Uploaded bytes and intermediate artifacts MUST remain in memory for the request lifetime; the prototype MUST NOT persist source documents, extracted document content, or generated artifacts to disk or external services.
-- Until an approved profile passes its applicable evaluation gates, every successful analysis MUST return `INCONCLUSIVE`. `PASS` and `FLAGGED` are reserved for a later approved screening profile; they are never lending, credit, onboarding, or KYC decisions.
-- Heatmap generation and `heatmap_overlay_url` are deferred from the first prototype. Webhooks, the review console, multi-tenant/public hosting, Kubernetes, and GPU deployment are later phases.
-- Completion of the prototype is not production readiness. Any later move to real documents, externally reachable service, persistence, or consequential workflow requires new owner approval and security/privacy review.
+SPECv3 is adopted as the **future product target**, not as authorization to change the running prototype's data handling or verdict behavior. Until separate owner approval and privacy, security, and legal review explicitly lift these gates:
 
-### Target personas and workflows
+- The current endpoint remains bound to `127.0.0.1`, accepts only project-generated synthetic PNG fixtures within its existing 1 MiB / 4,000,000-pixel limits, and processes requests in memory.
+- Do not process real identity, financial, customer, or other sensitive documents. The API cannot reliably establish that a submitted file is synthetic.
+- Do not persist source documents, extracted content, artifacts, or analyst dispositions; do not add the proposed 24-hour file retention or SQLite audit/feedback storage in this phase.
+- The current endpoint continues returning `INCONCLUSIVE` with null unvalidated scores. `PASS`/`FLAGGED`, webhook delivery, heatmap retrieval, and KYC/onboarding gates remain disabled until evaluation and explicit release approval.
+- SPECv3 requirements below describe the target to plan and validate in later phases; they do not override these current runtime constraints.
 
-| Target Persona | Target Workflow (later phase) | Target Interface |
+### Target Personas and Workflows
+
+| Target Persona | Primary Workflow | Primary Interface |
 | --- | --- | --- |
-| Lending Risk Analyst | Uploads loan document bundles; reviews tampering heatmaps, field breakdowns, and arithmetic checks | Human-in-the-Loop Review Console |
-| KYC / Compliance Officer | Reviews screening signals as one input to a human-controlled process | Automated Webhook Callbacks |
-| FinTech Platform Engineer | Submits documents programmatically and parses structured JSON verdicts within ≤ 2.0 s/page | REST API (`POST /v1/documents/analyze`) |
+| Lending Risk Analyst | Uploads loan document bundles; inspects opacity-adjustable heatmaps, anomaly bounding boxes, and ledger checks; submits fraud/false-positive dispositions | Human-in-the-Loop Review Console |
+| KYC / Compliance Officer | Reviews screening evidence as one input to a human-controlled process; no automated onboarding gate | Authenticated integration (future target) |
+| FinTech Platform Engineer | Submits documents programmatically and parses structured JSON verdicts within $\leq 1.0\text{ s/page}$ (GPU) | REST API (`POST /v1/documents/analyze`) |
 
-### Out of scope for v1.0.0-MVP
+### Out of Scope for v1.1.0-Hybrid-MVP
 
-- Real-document processing and external production deployment in the current prototype.
-- Persistent storage of source documents, extracted content, or artifacts in the current prototype.
-- Automated credit underwriting, lending, identity, onboarding, or KYC decisions.
+- Multi-node Kubernetes cluster orchestration, dedicated TensorRT inference servers, or distributed message brokers.
+- Long-term raw document archival beyond the 24-hour ephemeral retention window.
+- Autonomous credit underwriting decisions outside returning verification signals (`PASS` / `FLAGGED`) and explainable forensic evidence.
+- Automated credit, lending, onboarding, identity, or KYC decisions or gates based on system output.
 - Non-document media formats (video, audio, or unsupported office containers beyond `PDF`, `JPEG`, `PNG`, `TIFF`).
 
 ## 3. Terms
 
-- **Authenticity Score:** A profile-specific `0–100` estimate of document integrity; it is not proof of authenticity and remains `null` until a validated profile defines its meaning.
-- **Screening verdict:** A profile-bounded screening result. The prototype returns `INCONCLUSIVE`; a later approved profile may return `PASS` or `FLAGGED`.
-- **Tampered Document:** An authentic source document altered via image editing, PDF manipulation, text-splicing, or generative inpainting.
+- **Authenticity Score:** A calibrated `0–100` numeric score produced by the Hybrid Meta-Scorer reflecting estimated document integrity (lower scores indicate higher tampering or synthetic-generation risk).
+- **Verdict:** The system's binary automated outcome, strictly limited to `PASS` or `FLAGGED`.
+- **Circuit-Breaker Rule:** A deterministic, zero-tolerance forensic failure (e.g., broken bank ledger arithmetic or invalid ID checksum) that forces a `FLAGGED` verdict regardless of visual authenticity.
+- **Tampered Document:** An authentic source document altered via image editing, PDF manipulation, font-subset injection, text-splicing, or generative inpainting.
 - **Synthetic / AI Document:** A document largely or wholly generated by multimodal generative AI (Diffusion/GAN) models.
-- **Anomaly:** A discrete forensic finding emitted by Layers 1–4 with a typed classification, severity level, human-readable detail, and optional spatial bounding box.
-- **Heatmap Overlay:** A validated model's estimate of potentially manipulated pixels, intended for later review-console use.
+- **Perceptual Layout Hash (`pHash`):** A structural visual fingerprint computed on page layouts to detect reused fraudulent templates across separate submissions.
+- **Heatmap Overlay:** A pixel-level tampering probability mask rendered for interactive visual overlay against the original document page in the review console.
 
-## 4. Functional requirements
+## 4. Functional Requirements
 
-"MUST" indicates a mandatory v1.0.0-MVP release requirement. Requirement IDs are stable and mapped to the PRD's functional layers (`FR-1` through `FR-4`).
+"MUST" indicates a mandatory `v1.1.0-Hybrid-MVP` release requirement.
 
-### Ingestion, formats, and safe processing
+### Ingestion, Formats, and Safe Processing
 
-- **REQ-1 — Supported document formats:** The product target accepts `PDF`, `JPEG`, `PNG`, and `TIFF` via REST API; console upload is later-phase. Prototype format support may be staged, but every unsupported, corrupted, password-locked, or unreadable input MUST fail cleanly with a structured reason code.
-- **REQ-2 — Multi-page and bundle isolation:** The product target processes multi-page `PDF`/`TIFF` pages independently and isolates file failures in bundles. The local prototype may process one synthetic document per request; bundle handling is later-phase.
-- **REQ-3 — Bounded parsing and input safety:** Before expensive decoding or inference, the API MUST enforce explicit limits on file bytes, page count, decoded pixel dimensions, nested PDF object depth, and per-page processing time. Prototype defaults MUST be selected before implementation. Decoder safety limits MUST remain enabled to prevent decompression bombs and malformed-container exploits.
-- **REQ-4 — Document identity and integrity:** Upon ingestion, the system MUST assign a unique `document_id` (e.g., `doc_<hex>`) and compute a SHA-256 digest of the original input bytes prior to rasterization or transformation for audit traceability without modifying source bytes.
+- **REQ-1 — Supported document formats:** The engine MUST accept `PDF`, `JPEG`, `PNG`, and `TIFF` documents via the REST API and review console. Unsupported, corrupted, password-locked, or unreadable files MUST fail cleanly with a structured error response and explicit reason code.
+- **REQ-2 — Multi-page and bundle isolation:** For multi-page `PDF` and `TIFF` documents and analyst-uploaded loan bundles, the pipeline MUST process pages independently and isolate per-file failures so a single malformed file does not abort valid sibling files.
+- **REQ-3 — Bounded parsing and input safety:** Before executing GPU inference or unbounded decoding, the ingress layer MUST enforce configurable limits on file byte size (default: `25 MiB`), page count (default: `20 pages`), decoded pixel dimensions (`Pillow` `MAX_IMAGE_PIXELS`), nested PDF object depth, and per-page processing timeouts to prevent decompression bombs and malformed-container exploits.
+- **REQ-4 — Document identity and template fingerprinting:** Upon ingestion, the system MUST assign a unique `document_id` (`doc_<hex>`), compute a **SHA-256** digest of the original input bytes prior to transformation, and compute a **Perceptual Layout Hash (`pHash`)** to detect recurring fraudulent templates across submissions in the local audit database.
 
-### Layer 1: File and Metadata Forensics (FR-1)
+### Layer 1: File, Container, and Font-Subset Forensics (FR-1)
 
-- **REQ-5 — Container and metadata extraction (FR-1.1):** The Metadata Engine MUST extract and validate raw container metadata, PDF trailer dictionaries, revision trees, and XMP/EXIF tags using versioned parsers (such as ExifTool and PDF stream parsers). Parse failures or malformed metadata blocks MUST be recorded as structured signals rather than silently ignored.
-- **REQ-6 — Producer and editor signature screening (FR-1.2):** The Metadata Engine MUST flag documents whose producer, creator, or editor signatures match a versioned, configurable blacklist. The default MVP blacklist MUST include `Canva`, `Photoshop`, `Skia/PDF`, `HeadlessChrome`, and `iLovePDF`.
-- **REQ-7 — Timestamp consistency checks (FR-1.3):** The Metadata Engine MUST cross-validate document modification timestamps against creation and internal stream timestamps and emit a `METADATA_DISCREPANCY` anomaly whenever `|ModDate − CreationDate| > Δthreshold`, where `Δthreshold` is a versioned policy parameter defined per document profile.
-- **REQ-8 — Vector-layer raster overlay inspection (FR-1.4):** For native PDFs, the Metadata Engine MUST inspect vector content streams and object layers to detect suspicious raster image patches overlaid directly on top of native PDF text blocks.
+- **REQ-5 — Container and metadata extraction (FR-1.1):** The Metadata Engine MUST extract raw container metadata, PDF trailer dictionaries, incremental revision trees, and XMP/EXIF tags using `pikepdf`, `PyMuPDF` (`fitz`), and `PyExifTool`. Parse failures or malformed metadata blocks MUST be recorded as structured signals.
+- **REQ-5.1 — Null-metadata anomaly screening (FR-1.1b):** For digital-native institutional document types (e.g., `bank_statement`, `payslip`), the Metadata Engine MUST emit a `MEDIUM`-severity `METADATA_DISCREPANCY` signal when `/Producer`, `/Creator`, and `/CreationDate` fields are completely stripped or absent.
+- **REQ-6 — Producer and editor signature screening (FR-1.2):** The Metadata Engine MUST flag documents whose producer, creator, or editor signatures match a versioned, configurable blacklist. Default entries MUST include `Canva`, `Photoshop`, `Skia/PDF`, `HeadlessChrome`, and `iLovePDF`.
+- **REQ-7 — Timestamp consistency checks (FR-1.3):** The Metadata Engine MUST cross-validate modification timestamps against creation and internal stream timestamps and emit `METADATA_DISCREPANCY` whenever $|\text{ModDate} - \text{CreationDate}| > \Delta_{\text{threshold}}$ (versioned per document profile).
+- **REQ-8 — Vector-layer raster overlay inspection (FR-1.4):** For native PDFs, the Metadata Engine MUST inspect `PyMuPDF` page display lists and XObject layers to detect suspicious raster image patches overlaid directly on top of native PDF text blocks.
+- **REQ-8.1 — PDF font-subset and glyph table audit (FR-1.5):** For native PDFs, the Metadata Engine MUST inspect `/FontDescriptor` entries and embedded font subset prefixes (e.g., `AAAAAA+Arial` vs. `BBBBBB+Arial`) within the same text line or table column, flagging unauthorized single-field edits that inject mismatched font subsets or altered glyph `/Widths` tables.
 
-### Layer 2: Image and Frequency-Domain Forensics (FR-2)
+### Layer 2: Signal Processing and FP16 Vision Forensics (FR-2)
 
-- **REQ-9 — Frequency-domain spectral analysis (FR-2.1):** The Vision & ELA Engine MUST compute 2D Fast Fourier Transform (FFT) spectral maps on document page images to detect periodic checkerboard artifacts characteristic of generative Diffusion and GAN upsamplers.
-- **REQ-10 — Error Level Analysis (FR-2.2):** The Vision & ELA Engine MUST perform Error Level Analysis (ELA) to expose mismatched compression ratios between tampered regions (such as altered figures) and original document backgrounds.
-- **REQ-11 — Pixel-level tampering segmentation (FR-2.3):** The Vision & ELA Engine MUST run pre-trained forensic segmentation backbones (`TruFor` / `SegFormer` fine-tuned on `DocTamper`) to generate pixel-level tampering probability masks, localized `bounding_box` coordinates for `PIXEL_MANIPULATION` anomalies, and a renderable heatmap overlay image.
+- **REQ-9 — Frequency-domain spectral analysis (FR-2.1):** The Vision Engine MUST compute 2D Fast Fourier Transform (2D-FFT) azimuthal radial power spectra on CPU (`NumPy`/`SciPy`) to detect periodic checkerboard artifacts characteristic of Diffusion and GAN upsamplers.
+- **REQ-10 — Error Level Analysis (FR-2.2):** The Vision Engine MUST perform Error Level Analysis (ELA) via `OpenCV`/`Pillow` (JPEG recompression delta at calibrated quality $Q \in [90, 95]$) to expose mismatched compression ratios between altered fields and untouched backgrounds.
+- **REQ-11 — FP16 pixel-level tampering segmentation (FR-2.3):** The Vision Engine MUST run a document-specialized forensic segmentation backbone—**DTD (Document Tampering Detector, dual-stream RGB + DCT)** or **SegFormer-B2 fine-tuned on `DocTamper`**—in **PyTorch FP16 (`torch.amp.autocast`)** on CUDA (with automatic FP32 CPU fallback).
+  - **Tiled inference:** Pages exceeding `1500 px` on any edge MUST be processed via overlapping $512 \times 512$ tiles to preserve microscopic text noise without exceeding VRAM bounds.
+  - **Small-area calibration:** Probability mask thresholding MUST use document-calibrated cutoffs (tuned for tampered regions covering `0.3%–4%` of page area) to output `PIXEL_MANIPULATION` `bounding_box` coordinates and a renderable heatmap overlay PNG.
 
-### Layer 3: OCR, Font, and Geometry Consistency (FR-3)
+### Layer 3: ONNX OCR, Font, and Geometry Consistency (FR-3)
 
-- **REQ-12 — Spatial OCR extraction (FR-3.1):** The OCR & Layout Engine MUST extract spatial word and character bounding boxes and text content using `PaddleOCR` / `Donut` architectures, passing structured field extractions downstream to Layer 4.
-- **REQ-13 — Typography and geometry checks (FR-3.2):** The OCR & Layout Engine MUST detect baseline skew, irregular character spacing (kerning), and font-weight anomalies within numerical and financial fields, contributing to `font_anomaly_score`.
-- **REQ-14 — Hallucination and microprint degradation detection (FR-3.3):** The OCR & Layout Engine MUST flag potential AI-hallucinated characters or microprint degradation whenever character recognition confidence falls below `0.65` within high-DPI document sections (as defined by the active profile's DPI threshold).
+- **REQ-12 — Spatial OCR extraction (FR-3.1):** The OCR & Layout Engine MUST extract spatial word/character polygon bounding boxes, per-character confidence scores, and text content using **PaddleOCR (`PP-OCRv4`/`v5`/`v6`)** executed via **ONNX Runtime (`CUDAExecutionProvider` with CPU fallback)**, passing structured field extractions downstream to Layer 4.
+- **REQ-13 — Typography and geometry checks (FR-3.2):** The OCR & Layout Engine MUST compute baseline y-offset skew, irregular inter-character spacing (kerning variance), and stroke-width anomalies across numerical and financial fields, contributing to `font_anomaly_score`.
+- **REQ-14 — Hallucination and microprint degradation detection (FR-3.3):** The OCR & Layout Engine MUST flag potential AI-hallucinated characters or microprint degradation whenever character recognition confidence falls below $0.65$ within high-DPI document sections ($\geq 150\text{ DPI}$).
 
-### Layer 4: Financial and Semantic Logic Verification (FR-4)
+### Layer 4: Deterministic and Statistical Financial Logic (FR-4)
 
-- **REQ-15 — Financial ledger invariant validation (FR-4.1):** For bank statements and ledger documents, the Logic Engine MUST enforce the balance invariant equation `Closing Balance = Opening Balance + ∑ Credits − ∑ Debits`. Any discrepancy exceeding configured rounding precision MUST set `math_inconsistency: true` and emit an `ARITHMETIC_ERROR` anomaly citing expected versus claimed totals.
-- **REQ-16 — Identity document checksum and format validation (FR-4.2):** For identity and tax documents, the Logic Engine MUST execute deterministic validation routines including MRZ checksum validation, the Aadhaar Verhoeff algorithm, and PAN/GST format regular expressions, emitting structured anomalies on failure.
+- **REQ-15 — Financial ledger invariant validation (FR-4.1):** For bank statements and ledgers, the Logic Engine MUST enforce:
+  $$\text{Closing Balance} = \text{Opening Balance} + \sum \text{Credits} - \sum \text{Debits}$$
+  using exact `decimal.Decimal` arithmetic. Any discrepancy exceeding configured rounding precision MUST set `math_inconsistency: true` and emit a `CRITICAL` `ARITHMETIC_ERROR` anomaly citing expected versus claimed totals.
+- **REQ-15.1 — Statistical and behavioral ledger heuristics (FR-4.1b):** For financial statements, the Logic Engine MUST flag synthetic ledger patterns including excessive round-number clustering, duplicate transaction reference IDs, and impossible/invalid calendar dates (e.g., February 30 or non-clearing holiday payroll anomalies).
+- **REQ-16 — Identity document checksum and format validation (FR-4.2):** For identity and tax documents, the Logic Engine MUST execute deterministic validation routines via `python-stdnum` and ICAO 9303 parsers—including MRZ checksums, the Aadhaar Verhoeff algorithm, and PAN/GSTIN format regular expressions—emitting `CRITICAL` anomalies on failure.
 
-### Ensemble scoring, verdict, and notifications
+### Hybrid Meta-Scoring, Verdict, and Notifications
 
-- **REQ-17 — Ensemble Risk Scorer (later phase):** After candidate evidence and evaluation exist, the system MUST aggregate Layer 1–4 outputs via a versioned Weighted Composite Rule into an `authenticity_score` (`0–100`) and `risk_breakdown`. The prototype MUST leave unvalidated score fields `null` rather than fabricate a numeric score.
-- **REQ-18 — Gated verdict assignment:** The prototype MUST return `INCONCLUSIVE` for every successful analysis and MUST NOT emit a pass/fail authenticity judgment. A later approved profile MAY return `PASS` or `FLAGGED` only after satisfying its evaluation gates; those values are screening signals, not consequential decisions.
-- **REQ-19 — Automated webhook callbacks (later phase):** Before production use, the platform MUST support authenticated webhook delivery of screening payloads with bounded retry handling. Webhooks are not part of the local prototype.
+- **REQ-17 — Hybrid Meta-Classifier (`LightGBM` / `XGBoost`):** The Ensemble Risk Scorer MUST fuse Layer 1–4 structured signals (`metadata_tampering`, `fft_spectral_score`, `ela_peak_delta`, `seg_mask_area`, `font_anomaly_score`, `template_phash_distance`, `math_inconsistency`) using a versioned **LightGBM** or **XGBoost** tabular model to produce a calibrated `authenticity_score` (`0–100`) and `risk_breakdown`.
+- **REQ-18 — Binary verdict and circuit-breakers:** Every analyzed document MUST receive strictly one `verdict`: `PASS` or `FLAGGED`. A document MUST be marked `FLAGGED` if its `authenticity_score` falls below the versioned operating cutoff **OR** if any deterministic circuit-breaker triggers (`ARITHMETIC_ERROR`, ID checksum failure, or `CRITICAL` `PIXEL_MANIPULATION`). Otherwise, it MUST be marked `PASS`.
+- **REQ-19 — Automated webhook callbacks:** The platform MUST support asynchronous webhook delivery of `PASS` / `FLAGGED` payloads to configured endpoints with HMAC-SHA256 payload signatures and bounded exponential-backoff retries.
 
-### Human-in-the-Loop review console
+### Human-in-the-Loop (HITL) Console and Feedback Loop
 
-- **REQ-20 — Analyst review console (later phase):** A future console MAY allow analysts to review synthetic bundles, document pages, validated heatmaps, structured fields, and anomalies. The console and heatmap access are not part of the local prototype.
+- **REQ-20 — Interactive analyst review console:** The HITL UI MUST allow analysts to upload single documents or multi-page bundles, inspect the original document with an **interactive heatmap opacity slider** (`heatmap_overlay_url`), click anomalies in a sidebar to highlight `[x1, y1, x2, y2]` bounding boxes, and review arithmetic/metadata breakdowns.
+- **REQ-20.1 — Analyst disposition and active learning hook:** The HITL UI and API MUST expose `POST /v1/documents/{document_id}/feedback` so analysts can log final ground-truth dispositions (`CONFIRMED_FRAUD` or `FALSE_POSITIVE`) into the local SQLite audit store for periodic recalibration of the `LightGBM` meta-scorer.
 
-## 5. System architecture and processing pipeline
+## 5. System Architecture and Hybrid Processing Pipeline
 
-The production target is a stateless, horizontally scalable service behind an API Gateway. The prototype is a single local process bound to loopback:
+The system runs as a **Single-Node Modular Monolith** inside one **FastAPI** service (packaged in a single lightweight `Dockerfile` for reproducibility). CPU-bound tasks execute concurrently in a bounded worker pool (`max_workers = 2–4`), while GPU inference uses a serialized/batched FP16 execution queue (batch size `2–4` pages) to guarantee VRAM stability on 4–8 GB laptop GPUs.
 
-| Stage | Component | Responsibilities |
-| --- | --- | --- |
-| 1. Ingress | Local API | Validates synthetic fixture requests, enforces configured bounds, assigns `document_id`, and routes supported prototype formats. Production gateway, tenant authentication, and rate limits are later-phase requirements. |
-| 2. Parallel Forensics | Layer 1: Metadata Engine | Runs ExifTool / PDF Stream parser, Revision Tree Analyzer, blacklist checks, timestamp delta checks, and vector/raster overlay detection. |
-| 2. Parallel Forensics | Layer 2: Vision & ELA | Computes 2D-FFT spectral maps, Error Level Analysis, and `TruFor` / `SegFormer` tampering segmentation masks. |
-| 2. Parallel Forensics | Layer 3: OCR & Layout | Extracts `PaddleOCR` / `Donut` word/character bounding boxes, font baseline/kerning checks, and `< 0.65` confidence checks. |
-| 3. Aggregation & Logic | Anomaly Extraction & Layer 4: Logic Engine | Consolidates Layer 1 & 2 anomalies; runs Balance Sheet Validator and Checksum & ID Rules against Layer 3 extracted fields. |
-| 4. Scoring | Gated Screening Result | Returns `INCONCLUSIVE` until an approved profile passes its release gates; later profiles may emit `PASS` or `FLAGGED` screening signals. |
-| 5. Output | Local JSON API | Returns a synchronous screening response. Webhooks, heatmap access, and the review console are deferred. |
+| Stage | Component & Runtime | Responsibilities | Target Latency (Laptop GPU) |
+| --- | --- | --- | --- |
+| **0. Ingress** | FastAPI Gateway (CPU) | Validates MIME/size/page bounds, computes SHA-256 + `pHash`, assigns `document_id`, rasterizes PDF pages (`150–200 DPI`). | `~50–150 ms` |
+| **1. Fast CPU Forensics** | Layer 1 (`pikepdf` / `PyMuPDF`) & Layer 2a (`NumPy` / `OpenCV`) | Extracts metadata/revision trees, font-subset audits, raster overlays, 2D-FFT radial spectra, and ELA maps. | `~100–200 ms` |
+| **2. GPU Vision & OCR** | Layer 2b (`DTD` / `SegFormer-B2` FP16) & Layer 3 (`PaddleOCR` ONNX CUDA) | Generates tiled pixel-level tampering probability masks/heatmaps, extracts OCR polygons, kerning/baseline metrics, and $< 0.65$ confidence flags. | `~400–700 ms/page` |
+| **3. Logic & Fusion** | Layer 4 (Pure Python) & Ensemble Scorer (`LightGBM`) | Runs `Decimal` ledger math, statistical heuristics, ID checksums, computes `0–100` score, and applies `PASS`/`FLAGGED` circuit-breakers. | `< 30 ms` |
+| **4. Output & Storage** | FastAPI JSON, Local Ephemeral Storage & SQLite | Returns JSON response, dispatches async webhooks, serves heatmap overlays from `/tmp/docshield_ephemeral/` (24h auto-purge), logs metadata/feedback to SQLite. | `< 20 ms` |
 
-## 6. API specification and output schema
+## 6. API Specification and Output Schema
 
-### Analysis endpoint
+### Primary Endpoints
 
-- **Endpoint:** `POST /v1/documents/analyze`
-- **Content-Type:** `multipart/form-data`
-- **Required fields:**
-  - `file`: Binary document payload (`PDF`, `JPEG`, `PNG`, or `TIFF`).
-  - `document_type`: Document classification identifier (e.g., `bank_statement`, `payslip`, `government_id`, `utility_bill`) used to select Layer 4 validation rules and profile thresholds.
+- **Analyze Document:** `POST /v1/documents/analyze` (`multipart/form-data`)
+  - `file` *(required)*: Binary document payload (`PDF`, `JPEG`, `PNG`, `TIFF`).
+  - `document_type` *(required)*: Canonical enum (`bank_statement`, `payslip`, `government_id`, `utility_bill`, `invoice`, `generic`).
+- **Submit Analyst Feedback:** `POST /v1/documents/{document_id}/feedback` (`application/json`)
+  - Body: `{"disposition": "CONFIRMED_FRAUD" | "FALSE_POSITIVE", "analyst_notes": "string"}`
 
-### JSON response contract
+### JSON Response Contract (`POST /v1/documents/analyze`)
 
-Every successful analysis MUST return HTTP `200 OK` with the following top-level structure:
+Every successful analysis MUST return HTTP `200 OK` with the following backward-compatible schema:
 
 | Field | Type | Description |
 | --- | --- | --- |
 | `document_id` | `string` | Unique identifier assigned to the analyzed document (e.g., `"doc_8fbc2390a12e"`). |
-| `sha256` | `string` | SHA-256 digest of the exact submitted PNG bytes, computed before decoding. |
-| `authenticity_score` | `number \| null` | A `0–100` score only when a validated profile defines its semantics; otherwise `null`. |
-| `verdict` | `string` | Prototype enum: `"INCONCLUSIVE"`. An approved profile may later return `"PASS"` or `"FLAGGED"`. |
+| `authenticity_score` | `number` | Calibrated `0–100` authenticity score from the `LightGBM` meta-scorer. |
+| `verdict` | `string` | Binary verdict enum: `"PASS"` or `"FLAGGED"`. |
 | `processing_time_ms` | `integer` | End-to-end server-side processing duration in milliseconds. |
-| `risk_breakdown` | `object` | Layer-level signals. Unvalidated model scores are `null`; deterministic checks may report their typed results. |
-| `verdict_reason` | `string` | Explains that no validated profile is configured and the result is therefore `INCONCLUSIVE`. |
-| `detected_anomalies` | `array<object>` | List of triggered anomalies, each containing `type` (e.g., `METADATA_DISCREPANCY`, `PIXEL_MANIPULATION`, `ARITHMETIC_ERROR`), `severity` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `detail` (human-readable explanation), and optional `bounding_box` (`[x1, y1, x2, y2]`). |
-| `heatmap_overlay_url` | `string \| null` | `null` in the first prototype; heatmaps and retrieval URLs are deferred until the memory-only review flow is designed. |
+| `risk_breakdown` | `object` | Layer-level signals: `synthetic_ai_likelihood` (`0–1`), `metadata_tampering` (`0–1`), `font_anomaly_score` (`0–1`), `math_inconsistency` (`boolean`), and `template_reuse_detected` (`boolean`). |
+| `detected_anomalies` | `array<object>` | Triggered findings containing `type`, `severity` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `detail`, optional `page` (`integer`), and optional `bounding_box` (`[x1, y1, x2, y2]`). |
+| `heatmap_overlay_url` | `string` | Ephemeral URL pointing to the generated tampering probability mask overlay PNG (auto-purged after 24 hours). |
 
-#### Example response payload
+#### Example Response Payload
 
 ```json
 {
   "document_id": "doc_8fbc2390a12e",
-  "authenticity_score": null,
-  "verdict": "INCONCLUSIVE",
-  "processing_time_ms": 780,
-  "verdict_reason": "No validated screening profile is configured.",
+  "authenticity_score": 34.2,
+  "verdict": "FLAGGED",
+  "processing_time_ms": 840,
   "risk_breakdown": {
-    "synthetic_ai_likelihood": null,
-    "metadata_tampering": null,
-    "font_anomaly_score": null,
-    "math_inconsistency": null
+    "synthetic_ai_likelihood": 0.78,
+    "metadata_tampering": 0.95,
+    "font_anomaly_score": 0.52,
+    "math_inconsistency": true,
+    "template_reuse_detected": false
   },
   "detected_anomalies": [
     {
       "type": "METADATA_DISCREPANCY",
       "severity": "HIGH",
-      "detail": "PDF producer identified as 'Canva Canvas Engine'; ModDate differs from CreationDate by 120 days."
+      "page": 1,
+      "detail": "PDF producer identified as 'Canva Canvas Engine'; mixed font subsets ('AAAAAA+Arial' and 'BBBBBB+Arial') detected on salary line."
     },
     {
       "type": "PIXEL_MANIPULATION",
       "severity": "CRITICAL",
-      "detail": "Dense tampering heatmap detected around salary field.",
+      "page": 1,
+      "detail": "Dense tampering heatmap detected around net salary field.",
       "bounding_box": [140, 520, 260, 560]
     },
     {
       "type": "ARITHMETIC_ERROR",
       "severity": "CRITICAL",
-      "detail": "Sum of transaction line items (₹2,45,000) does not match total credits claimed (₹3,85,000)."
+      "page": 2,
+      "detail": "Sum of transaction line items (INR 2,45,000) does not match total credits claimed (INR 3,85,000)."
     }
   ],
-  "heatmap_overlay_url": null
+  "heatmap_overlay_url": "http://localhost:8000/v1/artifacts/doc_8fbc2390a12e_p1_mask.png"
 }
 ```
 
-## 7. Non-functional requirements and target KPIs
+## 7. Non-Functional Requirements and Target KPIs
 
 | ID | Metric / Domain | Target KPI / Requirement | Implementation Standard |
 | --- | --- | --- | --- |
-| **NFR-1** | Precision | `≥ 96.0%` on Tampered Docs | Minimizes false rejection rate for genuine retail credit applicants across held-out validation datasets. |
-| **NFR-2** | Recall | `≥ 93.0%` on Synthetic / AI Docs | Catches subtle Diffusion/GAN-synthesized identity cards, bank statements, and payslips. |
-| **NFR-3** | Inference Latency | `≤ 2.0 Seconds / Page` | Production target to be measured on the chosen accelerator/runtime; not a prototype claim. |
-| **NFR-4** | Throughput | `50 RPS Base / 300 RPS Peak` | Production target to be load-tested after deployment architecture is approved; not a prototype claim. |
-| **NFR-5** | Data Privacy | Memory-only prototype | Prototype request bytes, extracted content, and artifacts remain in memory for the request lifetime and are not persisted. The prototype uses synthetic documents only. |
+| **NFR-1** | Precision & Localization | $\geq 96.0\%$ Precision on Tampered Docs; tracked `Doc-AUC` & `Region-F1` | Minimizes false rejections across pristine and lightly recompressed documents. |
+| **NFR-2** | Recall | $\geq 93.0\%$ on Synthetic / AI Docs | Detects Diffusion/GAN-synthesized identity cards, bank statements, and payslips. |
+| **NFR-3** | Inference Latency | $\leq 1.0\text{ s/page}$ (GPU FP16) / $\leq 4.5\text{ s}$ per 5-page PDF | PyTorch FP16 (`torch.amp.autocast`) + ONNX Runtime CUDA on 4–8 GB laptop GPU; automatic CPU fallback ($\leq 3.5\text{ s/page}$). |
+| **NFR-4** | Hardware Footprint | Peak VRAM $\leq 3.5\text{ GB}$; Peak RAM $\leq 4.5\text{ GB}$ | Single-process FastAPI modular monolith; tiled inference for high-DPI scans; single-container Docker support. |
+| **NFR-5** | Data Privacy | Zero-Retention / Ephemeral (24h TTL) | Raw uploads and heatmaps stored in `/tmp/docshield_ephemeral/` (AES-256 optional) with background 24-hour purge; SQLite stores only hashes, scores, and dispositions (no raw PII). |
 
-### Engineering quality and governance requirements
+### Engineering Quality and Evaluation Discipline
 
-- **NFR-6 — Evaluation dataset discipline:** Before any non-inconclusive profile is enabled, training, threshold calibration, and final held-out partitions MUST be disjoint by source document and cover the named target population and stress transformations. The prototype uses synthetic fixtures only and makes no accuracy claim.
-- **NFR-7 — Threshold and model version governance:** Any later model/profile, blacklist, ensemble, and `PASS`/`FLAGGED` threshold MUST be versioned and frozen before release validation. The prototype MUST NOT treat example architectures in this document as approved dependencies.
-- **NFR-8 — Security and access control:** The prototype MUST bind only to loopback and MUST NOT expose a public service, webhook, or heatmap download. Any later externally reachable service MUST define TLS, authentication, authorization, and tenant isolation before deployment.
+- **NFR-6 — Local 3-Tier Evaluation & Ablation Discipline:** Model calibration and final validation MUST use disjoint splits evaluated locally across three tiers:
+  1. **Real-World Degradation Tier (`Kriyam TamperFlow`):** Evaluates robustness across `C0` (Pristine), `C2` (WhatsApp/Light JPEG), and `C4` (Print-and-Scan) tiers.
+  2. **Pixel Localization Tier (`ICDAR 2023 Receipt Forgery` or `DocTamper` test sample):** Benchmarks `Region-F1` and `Pixel-AUC` on edited numerical fields.
+  3. **Synthetic FinTech Tier (Custom HTML-to-PDF Generator):** Evaluates Layers 1, 3, and 4 (PDF font subsets, metadata stripping, ledger math, ID checksums) and produces an **Ablation Study** comparing Layer 1 only vs. Layers 1+2 vs. Full 4-Layer Pipeline.
+- **NFR-7 — Version Governance:** Segmentation weights, OCR ONNX models, `LightGBM` artifact versions, blacklist versions, and decision cutoffs MUST be version-pinned and logged alongside each `document_id` in SQLite.
+- **NFR-8 — Security and Access Control:** API endpoints, webhook callbacks, and heatmap downloads MUST enforce authenticated access and reject path traversal or cross-tenant artifact lookups.
 
-## 8. Acceptance and release readiness
+## 8. Acceptance and Release Readiness
 
-The local prototype is not eligible for real-document or production traffic. Before any later production release, functional completion of Layers 1–4, the REST API, webhooks, and review console is necessary but not sufficient:
+Before declaring `v1.1.0-Hybrid-MVP` ready for academic evaluation or live demo:
+- Local 3-tier benchmark confirms $\geq 96.0\%$ precision (`NFR-1`), $\geq 93.0\%$ recall (`NFR-2`), and documents the `C0` $\rightarrow$ `C2` $\rightarrow$ `C4` robustness curve and 4-layer ablation table (`NFR-6`).
+- Hardware profiling via `torch.cuda.max_memory_allocated()` confirms peak VRAM $\leq 3.5\text{ GB}$ (`NFR-4`) and $\leq 1.0\text{ s/page}$ p95 latency on a 4–8 GB laptop GPU (`NFR-3`).
+- Automated tests verify clean handling of corrupted/locked PDFs (`REQ-1`), 24-hour ephemeral file purging (`NFR-5`), and deterministic `FLAGGED` overrides on broken ledger math and invalid ID checksums (`REQ-18`).
 
-- Held-out evaluation MUST verify `≥ 96.0%` precision on tampered documents (`NFR-1`) and `≥ 93.0%` recall on synthetic/AI documents (`NFR-2`).
-- Load testing on Kubernetes with TensorRT-optimized NVIDIA T4/A10G workers MUST confirm `≤ 2.0 s/page` p95 inference latency (`NFR-3`) and sustained `50 RPS` base / `300 RPS` peak throughput (`NFR-4`).
-- Security and privacy verification MUST demonstrate the owner-approved retention policy. The prototype's memory-only rule cannot be replaced by persisted 24-hour storage without a new owner decision.
+## 9. Confirmed Decisions and Remaining Calibration Items
 
-## 9. Decisions and open questions
+### Confirmed Decisions (`v1.1.0-Hybrid-MVP`)
+- **Architecture:** Single-node FastAPI Modular Monolith with SQLite audit/feedback storage and local 24-hour ephemeral file cleanup.
+- **Model Stack:** `DTD` or `SegFormer-B2` (PyTorch **FP16** with $512 \times 512$ tiling) + `PaddleOCR` (`ONNX Runtime CUDA`) + `LightGBM`/`XGBoost` meta-scorer (no INT8 quantization on vision models; no redundant `Donut`).
+- **Verdict Contract:** Strictly binary `PASS` or `FLAGGED`, backed by deterministic circuit-breakers.
 
-### Confirmed decisions
+### Open for Calibration Phase
+1. **Meta-Scorer Operating Cutoff:** Exact `LightGBM` threshold separating `PASS` and `FLAGGED` tuned on the held-out validation split.
+2. **Heuristic Thresholds:** Default $\Delta_{\text{threshold}}$ ($|\text{ModDate} - \text{CreationDate}|$, `REQ-7`) per document type and `pHash` Hamming distance cutoff for `template_reuse_detected`.
+3. **Mask Area Threshold:** Calibrated probability cutoff $\tau$ for `DTD`/`SegFormer-B2` bounding-box extraction on small numerical fields (`0.3%–4%` page coverage).
 
-- Product direction is **Fraud Netra v1.0.0-MVP** targeting Lending, Underwriting, and KYC operations; the current deliverable is only a local synthetic-data prototype.
-- The product target supports `PDF`, `JPEG`, `PNG`, and `TIFF`; prototype format support may be delivered incrementally.
-- Prototype verdicts are `INCONCLUSIVE` until an approved profile passes its evaluation gates; later `PASS`/`FLAGGED` results are screening signals only.
-- Prototype input and artifacts are memory-only; heatmap URLs, webhooks, and review-console workflows are deferred.
+## 10. Change Control
 
-### Open for architecture and implementation planning
+Normative system behavior belongs in this specification under stable `REQ-*` and `NFR-*` IDs. Any change to the `POST /v1/documents/analyze` schema, `verdict` values, supported formats, meta-scorer feature set, retention window, or target KPIs MUST update this specification, corresponding acceptance tests, and API documentation together.
 
-1. **Ensemble weights and cutoff:** Final calibrated weights for Layers 1–4 and the exact `authenticity_score` threshold separating later `PASS` and `FLAGGED` outcomes to satisfy `≥ 96.0%` precision and `≥ 93.0%` recall.
-2. **Heuristic thresholds:** Exact default values for `Δthreshold` (`|ModDate − CreationDate|`, `REQ-7`) per document type and the minimum DPI definition for "high-DPI sections" (`REQ-14`).
-3. **API limits and enums:** Exact canonical list of `document_type` values, maximum file size (MiB), maximum page count for multi-page `PDF`/`TIFF`, and per-tenant rate-limit quotas at the API Gateway.
-4. **Webhook contract:** Exact webhook registration mechanism (tenant config vs. per-request callback URL), HMAC signature header format, and retry/dead-letter schedule.
+## 11. Adoption notes and unresolved gates
 
-## 10. Change control
-
-Product goals and business KPIs belong in the PRD. Normative system behavior belongs in this specification under stable `REQ-*` and `NFR-*` IDs. Any change to the `POST /v1/documents/analyze` schema, `verdict` values, supported formats, ensemble scoring rules, retention window, or target KPIs MUST update this specification, corresponding acceptance tests, and API documentation together.
+- The project name remains **Fraud Netra**; “DocShield Forensics” was the source draft's working name. `SPECv3.md` is retained as the supplied source.
+- The target's `NFR-5` calls 24-hour raw-file storage “Zero-Retention.” These are not equivalent; before implementing retention, define exact data classes, TTL semantics, deletion guarantees, encryption, crash/backup behavior, and SQLite contents.
+- Authentication is required by `NFR-8`, but identity, credential management, roles, and webhook registration/authentication are not specified. Resolve these before exposing any endpoint beyond loopback.
+- The evaluation datasets, their licenses/provenance, representativeness, and availability are not yet established. No precision, recall, localization, or latency claim is valid without independent evaluation.
+- Model choices and thresholds (`DTD` vs. `SegFormer-B2`, OCR ONNX variant, LightGBM vs. XGBoost, pHash cutoff, scoring cutoff) remain calibration decisions, not runtime defaults.
+- The proposed precision/recall thresholds, 1-second GPU latency, memory ceilings, and fault-handling guarantees are targets only and require measurement on the actual supported hardware and fixture corpus.

@@ -1,14 +1,14 @@
 # Fraud Netra
 
 Fraud Netra is a document-screening project for Lending, Underwriting, and KYC review
-workflows. The approved current target is a **local-only prototype using synthetic documents**.
+workflows. Its long-term product target is specified in `SPECv3.md`; the current implementation
+remains a **local-only prototype using synthetic documents**.
 
 ## Current status
 
-The prototype scope from `SPECv2.md` has been reconciled into `PRD.md`, `SPEC.md`, and the
-acceptance criteria. Architecture and implementation have not yet started for Fraud Netra. The
-code currently in `src/` is the earlier Image Evidence Scanner CLI;
-it is not a Fraud Netra API and must not be used to process real customer documents.
+The first Fraud Netra API slice is implemented. It is not a validated forensic detector and must
+not be used to process real customer documents. The earlier Image Evidence Scanner CLI remains
+separate historical code.
 
 ## Local prototype
 
@@ -32,5 +32,6 @@ Requests are limited to 1 MiB and decoded images to 4,000,000 pixels.
 
 See [`PRD.md`](PRD.md), [`SPEC.md`](SPEC.md), and
 [`docs/product/acceptance-criteria.md`](docs/product/acceptance-criteria.md) for the current
-scope and project trajectory. Work status is tracked in
+scope and project trajectory. [`SPECv3.md`](SPECv3.md) is the supplied long-term target source;
+its higher-risk features remain gated. Work status is tracked in
 [GitHub Issues](https://github.com/ishansing/Fraud-Eye/issues).

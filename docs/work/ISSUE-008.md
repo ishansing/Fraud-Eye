@@ -3,6 +3,9 @@
 **GitHub issue:** [#2](https://github.com/ishansing/Fraud-Eye/issues/2)  
 **Normative scope:** [`SPEC.md`](../../SPEC.md), [`architecture.md`](../architecture/architecture.md), and [ADR 0004](../architecture/ADR/0004-loopback-png-prototype.md)
 
+**Status:** This slice defines only the current local prototype. SPECv3's wider target is tracked
+separately and does not authorize expanding this endpoint's format, storage, or verdict behavior.
+
 ## Objective
 
 Implement the first runnable, loopback-only, memory-only API slice for one generated synthetic PNG.
