@@ -1,6 +1,6 @@
 # Product Requirements Document
 
-## DocShield Forensics
+## Fraud Netra
 
 | Field | Value |
 | --- | --- |
@@ -13,7 +13,7 @@
 
 ## 1. Product outcome
 
-DocShield Forensics is a document-screening system for Lending, Underwriting, and KYC operations. Its long-term target accepts financial and identity documents, collects metadata, image, OCR/layout, and deterministic financial/identity signals, and presents findings for human review.
+Fraud Netra is a document-screening system for Lending, Underwriting, and KYC operations. Its long-term target accepts financial and identity documents, collects metadata, image, OCR/layout, and deterministic financial/identity signals, and presents findings for human review.
 
 The current project deliverable is deliberately narrower: a local-only REST API prototype exercised with synthetic documents. It demonstrates safe ingestion, document identity, bounded parsing, and a structured screening response without handling real customer data or claiming validated detection performance.
 

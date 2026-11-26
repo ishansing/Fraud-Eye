@@ -1,4 +1,4 @@
-# ISSUE-007: Design the DocShield local prototype architecture
+# ISSUE-007: Design the Fraud Netra local prototype architecture
 
 **GitHub issue:** [#2](https://github.com/ishansing/Fraud-Eye/issues/2)  
 **Normative scope:** [`SPEC.md`](../../SPEC.md) and [`docs/product/decisions.md`](../product/decisions.md)

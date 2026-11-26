@@ -10,5 +10,5 @@ source of truth for work status, ownership, and discussion.
 - Completed historical slices may remain in `docs/work/` without backfilling closed issues.
 - The Image Evidence Scanner's former `ISSUE-006` is closed as superseded:
   [#1](https://github.com/ishansing/Fraud-Eye/issues/1).
-- Active DocShield architecture work is `ISSUE-007`:
+- Active Fraud Netra architecture work is `ISSUE-007`:
   [#2](https://github.com/ishansing/Fraud-Eye/issues/2).

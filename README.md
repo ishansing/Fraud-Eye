@@ -1,14 +1,14 @@
-# DocShield Forensics
+# Fraud Netra
 
-DocShield Forensics is a document-screening project for Lending, Underwriting, and KYC review
+Fraud Netra is a document-screening project for Lending, Underwriting, and KYC review
 workflows. The approved current target is a **local-only prototype using synthetic documents**.
 
 ## Current status
 
 The prototype scope from `SPECv2.md` has been reconciled into `PRD.md`, `SPEC.md`, and the
-acceptance criteria. Architecture and implementation have not yet started for DocShield. The
+acceptance criteria. Architecture and implementation have not yet started for Fraud Netra. The
 code currently in `src/` is the earlier Image Evidence Scanner CLI;
-it is not a DocShield API and must not be used to process real customer documents.
+it is not a Fraud Netra API and must not be used to process real customer documents.
 
 ## Prototype boundary
 

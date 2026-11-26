@@ -1,7 +1,7 @@
 # Verification
 
 **Historical:** This verification covers the superseded Image Evidence Scanner implementation
-only; it is not evidence for DocShield.
+only; it is not evidence for Fraud Netra.
 
 **Status:** Blocked for full product completion; the committed local-scanner checkpoint is
 verified.

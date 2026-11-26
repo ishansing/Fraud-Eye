@@ -4,13 +4,14 @@ Source: owner alignment on 2026-11-26, based on `SPECv2.md`.
 
 ## Facts
 
-- `SPECv2.md` proposes DocShield Forensics: document screening for Lending, Underwriting, and KYC operations via API, webhooks, and a review console.
-- The prior project was an offline image CLI. Its PRD, implementation, acceptance criteria, threat model, and architecture do not describe DocShield.
+- `SPECv2.md` proposes the document-screening product now named Fraud Netra for Lending, Underwriting, and KYC operations via API, webhooks, and a review console.
+- The supplied specification used the working title DocShield Forensics; the canonical project name is Fraud Netra.
+- The prior project was an offline image CLI. Its PRD, implementation, acceptance criteria, threat model, and architecture do not describe Fraud Netra.
 - The provided specification includes support for PDF/JPEG/PNG/TIFF, multi-page processing, financial/identity signals, a numeric score, binary verdicts, and visual overlays.
 
 ## Decisions
 
-- **Product direction:** Replace Image Evidence Scanner with DocShield Forensics. `SPECv2.md` is the new product input; update the canonical PRD and SPEC to match the owner-approved prototype scope.
+- **Product direction:** Replace Image Evidence Scanner with Fraud Netra. `SPECv2.md` is the new product input; canonical documents use the owner-selected name and prototype scope.
 - **Prototype data:** Use synthetic documents only. Do not upload or process real identity, financial, or customer documents in this prototype.
 - **Prototype deployment:** Begin with a local-only REST API vertical slice and bounded in-memory processing. No public endpoint or production tenant.
 - **Retention:** Do not persist uploaded documents or generated artifacts in the prototype; process them in memory for the request lifetime.

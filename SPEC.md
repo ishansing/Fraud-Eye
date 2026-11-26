@@ -1,4 +1,4 @@
-# DocShield Forensics — Product Specification
+# Fraud Netra — Product Specification
 
 | Field | Value |
 | --- | --- |
@@ -11,11 +11,11 @@
 
 ## 1. Purpose and authority
 
-This document defines the normative behavior of **DocShield Forensics v1.0.0-MVP**. The product direction is document screening for Lending, Underwriting, and KYC operations. This specification incorporates the owner-approved prototype limits recorded in `docs/product/decisions.md`; `SPECv2.md` is retained as the submitted source proposal. Acceptance criteria define the prototype implementation gate, while later-stage requirements remain explicit.
+This document defines the normative behavior of **Fraud Netra v1.0.0-MVP**. The product direction is document screening for Lending, Underwriting, and KYC operations. This specification incorporates the owner-approved prototype limits recorded in `docs/product/decisions.md`; `SPECv2.md` is retained as the submitted source proposal, with the canonical project name updated to Fraud Netra. Acceptance criteria define the prototype implementation gate, while later-stage requirements remain explicit.
 
 ## 2. Product boundary
 
-The DocShield Forensics product target is an automated REST API, webhook notification service, and Human-in-the-Loop (HITL) review console. It is intended to ingest financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), execute a four-layer forensics pipeline, and present screening findings. Scores, binary screening signals, and localization are future profile-gated capabilities, not prototype output.
+The Fraud Netra product target is an automated REST API, webhook notification service, and Human-in-the-Loop (HITL) review console. It is intended to ingest financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), execute a four-layer forensics pipeline, and present screening findings. Scores, binary screening signals, and localization are future profile-gated capabilities, not prototype output.
 
 ### Current prototype boundary
 
@@ -198,7 +198,7 @@ The local prototype is not eligible for real-document or production traffic. Bef
 
 ### Confirmed decisions
 
-- Product direction is **DocShield Forensics v1.0.0-MVP** targeting Lending, Underwriting, and KYC operations; the current deliverable is only a local synthetic-data prototype.
+- Product direction is **Fraud Netra v1.0.0-MVP** targeting Lending, Underwriting, and KYC operations; the current deliverable is only a local synthetic-data prototype.
 - The product target supports `PDF`, `JPEG`, `PNG`, and `TIFF`; prototype format support may be delivered incrementally.
 - Prototype verdicts are `INCONCLUSIVE` until an approved profile passes its evaluation gates; later `PASS`/`FLAGGED` results are screening signals only.
 - Prototype input and artifacts are memory-only; heatmap URLs, webhooks, and review-console workflows are deferred.

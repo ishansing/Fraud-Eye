@@ -1,4 +1,4 @@
-# DocShield Forensics
+# Fraud Netra
 
 This glossary defines the domain language used by the document-screening prototype.
 

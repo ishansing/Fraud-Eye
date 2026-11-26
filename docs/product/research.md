@@ -1,6 +1,6 @@
 # Implementation-planning research
 
-**Historical:** This research concerns the superseded Image Evidence Scanner and does not support DocShield architecture or model decisions. DocShield-specific research has not yet been conducted. Sources below are retained for project history only.
+**Historical:** This research concerns the superseded Image Evidence Scanner and does not support Fraud Netra architecture or model decisions. Fraud Netra-specific research has not yet been conducted. Sources below are retained for project history only.
 
 Research for the former image-scanner technical choices; evidence is not a product decision. Sources checked 2026-11-24 and 2026-11-25.
 

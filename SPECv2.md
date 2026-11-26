@@ -1,20 +1,22 @@
-# DocShield Forensics — Product Specification
+# Fraud Netra — Product Specification
+
+> The supplied draft used the working title “DocShield Forensics”; the project name is Fraud Netra.
 
 | Field | Value |
 | --- | --- |
 | Status | Approved for architecture and implementation |
 | Version | 1.0.0-MVP |
 | Updated | 2026-11-25 |
-| Product requirements | DocShield Forensics PRD v1.0.0-MVP |
+| Product requirements | Fraud Netra PRD v1.0.0-MVP |
 | Target audience | Lending, Underwriting & KYC Risk Operations |
 
 ## 1. Purpose and authority
 
-This document defines the normative behavior of **DocShield Forensics v1.0.0-MVP**, an automated synthetic and tampered document verification engine for FinTech and lending risk operations. The PRD defines product objectives, personas, forensic layers, and target KPIs; this specification defines implementation requirements, API contracts, safety bounds, and operational constraints. Acceptance criteria verify each `REQ-*` and `NFR-*` identifier below.
+This document defines the normative behavior of **Fraud Netra v1.0.0-MVP**, an automated synthetic and tampered document verification engine for FinTech and lending risk operations. The PRD defines product objectives, personas, forensic layers, and target KPIs; this specification defines implementation requirements, API contracts, safety bounds, and operational constraints. Acceptance criteria verify each `REQ-*` and `NFR-*` identifier below.
 
 ## 2. Product boundary
 
-DocShield Forensics is an automated REST API, webhook notification service, and Human-in-the-Loop (HITL) review console. It ingests unstructured financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), executes a four-layer forensics pipeline (container metadata, frequency-domain and vision segmentation, OCR/font geometry, and financial/semantic logic), and outputs an explainable `0–100` authenticity score, a binary `PASS` or `FLAGGED` verdict, structured anomaly details, and localized visual tampering heatmaps.
+Fraud Netra is an automated REST API, webhook notification service, and Human-in-the-Loop (HITL) review console. It ingests unstructured financial and identity documents (`PDF`, `JPEG`, `PNG`, `TIFF`), executes a four-layer forensics pipeline (container metadata, frequency-domain and vision segmentation, OCR/font geometry, and financial/semantic logic), and outputs an explainable `0–100` authenticity score, a binary `PASS` or `FLAGGED` verdict, structured anomaly details, and localized visual tampering heatmaps.
 
 ### Target personas and workflows
 
@@ -186,7 +188,7 @@ Functional completion of Layers 1–4, the REST API, webhooks, and the review co
 
 ### Confirmed decisions
 
-- Product scope is **DocShield Forensics v1.0.0-MVP** (REST API, webhook callbacks, and Human-in-the-Loop review console) targeting Lending, Underwriting, and KYC operations.
+- Product scope is **Fraud Netra v1.0.0-MVP** (REST API, webhook callbacks, and Human-in-the-Loop review console) targeting Lending, Underwriting, and KYC operations.
 - Supported input formats for v1.0.0-MVP are `PDF`, `JPEG`, `PNG`, and `TIFF`.
 - The automated `verdict` enum is strictly binary: `PASS` or `FLAGGED`.
 - Ephemeral data handling (in-memory or AES-256 encrypted, auto-purged after 24 hours) applies to uploaded documents and generated heatmaps.

@@ -1,8 +1,8 @@
 # Epics threat model
 
 **Historical:** This threat model covers the superseded local image-scanner CLI. It does not
-cover DocShield's API, sensitive document data, or new trust boundaries; threat modeling must
-be revisited before DocShield implementation or any external exposure.
+cover Fraud Netra's API, sensitive document data, or new trust boundaries; threat modeling must
+be revisited before Fraud Netra implementation or any external exposure.
 
 ## Executive summary
 
